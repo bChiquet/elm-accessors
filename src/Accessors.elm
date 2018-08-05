@@ -132,8 +132,8 @@ implement accessor combinators on your record fields.
 Like every accessor, this accessor takes a sub accessor, and returns an accessor
 for the structure that wraps it.
 -}
-exampleFieldLens : Accessor inter sub wrap
-                -> Accessor {rec | field : inter} sub wrap
+exampleFieldLens : Accessor super sub wrap
+                -> Accessor {rec | field : super} sub wrap
 exampleFieldLens (Accessor sub) = 
   Accessor { get  = \super -> sub.get super.field
            , over = \change -> 
@@ -157,7 +157,7 @@ exampleFieldLens (Accessor sub) =
     over (foo << onEach << bar) (+1) listRecord
     -- returns {foo = [{ bar = 3}, {bar = 4}, {bar = 5}] }
 -}
-onEach : Accessor a b c -> Accessor (List a) b (List c)
+onEach : Accessor super sub wrap -> Accessor (List super) sub (List wrap)
 onEach (Accessor sub) = 
   Accessor { get = \list -> List.map sub.get list
            , over = \f -> (\list -> List.map (sub.over f) list) }
@@ -181,11 +181,11 @@ onEach (Accessor sub) =
     over (qux << try << bar) (+1) listRecord
     -- returns { foo = Just { bar = 2} , qux = Nothing }
 -}
-try : Accessor a b c -> Accessor (Maybe a) b (Maybe c)
+try : Accessor super sub wrap -> Accessor (Maybe super) sub (Maybe wrap)
 try (Accessor sub) =
   Accessor { get = \maybe -> case maybe of 
                       Just something -> Just (sub.get something)
-                      Nothing -> Nothing
+                      Nothing        -> Nothing
            , over = \f -> (\maybe -> case maybe of 
                       Just something -> Just (sub.over f something)
-                      Nothing -> Nothing) }
+                      Nothing        -> Nothing) }
