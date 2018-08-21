@@ -1,4 +1,4 @@
-module Accessors exposing (Accessor(Accessor), get, set, over, onEach, try)
+module Accessors exposing (Accessor(..), get, set, over, onEach, try)
 
 {-| Accessors provide the ability to access nested data structures. Accessors
 can be obtained by composing accessor combinators (also called Lenses):
