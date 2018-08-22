@@ -1,17 +1,15 @@
 {
     "type": "package",
     "name": "bChiquet/elm-accessors",
-    "version": "1.0.0",
     "summary": "Accessors, a library implementing lenses for Elm.",
-    "repository": "https://github.com/bChiquet/elm-accessors.git",
     "license": "BSD-3-Clause",
-    "source-directories": [
-        "./src"
+    "version": "1.0.1",
+    "exposed-modules": [
+        "Accessors"
     ],
-    "exposed-modules": ["Accessors"],
+    "elm-version": "0.19.0 <= v < 0.20.0",
     "dependencies": {
         "elm/core": "1.0.0 <= v < 2.0.0"
     },
-    "elm-version": "0.19.0 <= v < 0.20.0",
     "test-dependencies": {}
 }
