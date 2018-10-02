@@ -2,7 +2,8 @@ module Spec exposing (suite)
 
 import Test exposing (Test, describe, test)
 import Expect
-import Accessors exposing (get, set, over, onEach, try)
+import Accessors exposing (get, set, over, onEach, try) 
+import Accessors exposing (makeOneToOne, makeOneToN)
 import Test.Accessors.Record exposing (r)
 
 
@@ -100,5 +101,41 @@ suite =
           in Expect.equal
             (get (r.foo << try << r.bar) updatedExample)
             Nothing
+      ]
+    , describe "making accessor combinators"
+      [ let myFoo = makeOneToOne 
+                      .foo
+                      (\f rec -> {rec | foo = f rec.foo})
+        in describe "makeOneToOne" 
+          [ test "get" <| \_ ->
+              Expect.equal 
+                (get (myFoo << r.bar) nestedRecord)
+                "Yop"
+          , test "set" <| \_ ->
+              let updatedRec = (set (r.foo << myFoo) 1 nestedRecord)
+              in Expect.equal updatedRec.foo.foo 1
+          , test "over" <| \_ -> 
+              let updatedRec = (over (myFoo << myFoo) (\n -> n+3) nestedRecord)
+              in Expect.equal updatedRec.foo.foo 6
+          ]
+      , let myOnEach = makeOneToN List.map List.map
+        in describe "makeOneToN"
+          [ test "get" <| \_ ->
+              Expect.equal 
+                (get (r.bar << myOnEach << r.foo) recordWithList)
+                [3, 5]
+          , test "set" <| \_ -> 
+              let updatedExample = 
+                (set (r.bar << myOnEach << r.bar) "Greetings" recordWithList)
+              in Expect.equal
+                (get (r.bar << onEach << r.bar) updatedExample)
+                ["Greetings", "Greetings"]
+          , test "over" <| \_ -> 
+              let updatedExample = 
+                (over (r.bar << myOnEach << r.foo) (\n -> n-2) recordWithList)
+              in Expect.equal
+                (get (r.bar << onEach << r.foo) updatedExample)
+                [1, 3]
+          ]
       ]
     ]

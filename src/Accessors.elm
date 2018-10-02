@@ -1,4 +1,9 @@
-module Accessors exposing (Accessor(..), get, set, over, onEach, try)
+module Accessors exposing
+  ( Accessor(..)
+  , get, set, over
+  , onEach, try
+  , makeOneToOne, makeOneToN
+  )
 
 {-| Accessors provide the ability to access nested data structures. Accessors
 can be obtained by composing accessor combinators (also called Lenses):
@@ -45,6 +50,7 @@ look and feel of mutable data structures, it's immutable all the way down.
 @docs get, set, over
 
 # Accessor combinators
+@docs makeOneToOne, makeOneToN
 @docs onEach, try
 
 For an example on how to write, look the code for exampleFieldLens
@@ -142,6 +148,46 @@ exampleFieldLens (Accessor sub) =
              )
            }
 
+{-| This function lets you build an accessor combinator for containers that have
+a 1:1 relation with what they contain, such as a record and one of its fields:
+
+```
+foo : Accessor field sub wrap -> Accessor {rec | foo : field} sub wrap
+foo =
+  makeOneToOne
+    .foo
+    \change rec -> {rec | foo = change rec.foo }
+```
+-}
+makeOneToOne :  (super -> sub)
+             -> ((sub -> sub) -> super -> super)
+             -> Accessor sub   reachable wrap
+             -> Accessor super reachable wrap
+makeOneToOne getter mapper (Accessor sub) =
+  Accessor { get  = \super -> sub.get (getter super)
+           , over = \change super -> mapper (sub.over change) super
+           }
+
+{-| This function lets you build an accessor combinator for containers that have
+a 1:N relation with what they contain, such as `List` (0-N cardinality) or
+`Maybe` (0-1). E.g.:
+```
+onEach : Accessor elem sub wrap -> Accessor (List elem) sub (List wrap)
+onEach =
+  makeOneToN
+    List.map
+    List.map
+```
+n.b. implementing those is usually considerably simpler than the type suggests.
+-}
+makeOneToN :  ((sub -> subWrap) -> super -> superWrap)
+           -> ((sub -> sub) -> super -> super)
+           -> Accessor sub   reachable subWrap
+           -> Accessor super reachable superWrap
+makeOneToN getter mapper (Accessor sub) =
+  Accessor { get  = \super -> getter sub.get super
+           , over = \change super -> mapper (sub.over change) super
+           }
 
 {-| This accessor combinator lets you access values inside lists.
 
