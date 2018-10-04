@@ -215,16 +215,16 @@ onEach (Accessor sub) =
                   , qux = Nothing
                   }
 
-    get (foo << try << bar) listRecord
+    get (foo << try << bar) maybeRecord
     -- returns Just 2
 
-    get (qux << try << bar) listRecord
+    get (qux << try << bar) maybeRecord
     -- returns Nothing
 
-    over (foo << try << bar) (+1) listRecord
+    over (foo << try << bar) (+1) maybeRecord
     -- returns { foo = Just { bar = 3} , qux = Nothing }
 
-    over (qux << try << bar) (+1) listRecord
+    over (qux << try << bar) (+1) maybeRecord
     -- returns { foo = Just { bar = 2} , qux = Nothing }
 -}
 try : Accessor super sub wrap -> Accessor (Maybe super) sub (Maybe wrap)
