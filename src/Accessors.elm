@@ -229,9 +229,9 @@ onEach (Accessor sub) =
 -}
 try : Accessor super sub wrap -> Accessor (Maybe super) sub (Maybe wrap)
 try (Accessor sub) =
-  Accessor { get = \maybe -> case maybe of 
+  Accessor { get = \maybe -> case maybe of
                       Just something -> Just (sub.get something)
                       Nothing        -> Nothing
-           , over = \f -> (\maybe -> case maybe of 
+           , over = \f -> (\maybe -> case maybe of
                       Just something -> Just (sub.over f something)
                       Nothing        -> Nothing) }
