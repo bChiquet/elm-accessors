@@ -2,8 +2,8 @@ module Spec exposing (suite)
 
 import Test exposing (Test, describe, test)
 import Expect
-import Accessors exposing (get, set, over, onEach, try) 
-import Accessors exposing (makeOneToOne, makeOneToN)
+import Accessors exposing (get, set, over, makeOneToOne, makeOneToN)
+import Accessors.Library exposing (onEach, try)
 import Test.Accessors.Record exposing (r)
 
 
@@ -102,7 +102,7 @@ suite =
             (get (r.foo << try << r.bar) updatedExample)
             Nothing
       ]
-    , describe "making accessor combinators"
+    , describe "making accessors"
       [ let myFoo = makeOneToOne 
                       .foo
                       (\f rec -> {rec | foo = f rec.foo})
