@@ -67,7 +67,7 @@ getter   = get  myAccessor myData
 setter   = set  myAccessor 2 myData
   -- returns {foo = [{bar = 2}, {bar = 2}, {bar = 2}] }
 
-transorm = over myAccessor (\n -> n*2) myData
+transform = over myAccessor (\n -> n*2) myData
   -- returns {foo = [{bar = 6}, {bar = 4}, {bar = 0}] }
 ```
 
