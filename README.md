@@ -104,6 +104,9 @@ myOtherAccessor = recordBar << halfWay
 getter = get  myOtherAccessor myOtherData
   -- returns Just [1, 3, 2]
 ```
+# Play with it in Ellie
+
+[Ellie default code with accessors](https://ellie-app.com/4wHNCxgft87a1). 
 
 # Contribute
 
