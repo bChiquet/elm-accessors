@@ -95,7 +95,7 @@ set accessor value s =
 and it returns the data structure, with the accessible field changed by applying
 the function to the existing value.
 ```
-over (foo << qux) (+1) myRecord
+over (foo << qux) ((+) 1) myRecord
 ```
 -}
 over : (Relation sub sub sub -> Relation super sub wrap)
