@@ -1,5 +1,6 @@
 module Accessors exposing
   ( Relation
+  , Accessor
   , get, set, over
   , makeOneToOne, makeOneToN
   )
@@ -30,6 +31,7 @@ Accessors are built using these functions:
 # Relation
 
 @docs Relation
+@docs Accessor
 -}
 
 
@@ -47,6 +49,14 @@ type Relation super sub wrap =
     Relation { get : super -> wrap
              , over : (sub -> sub) -> (super -> super) }
 
+
+{-| An `Accessor super sub wrap` is an alias for a function taking a `Relation`
+and giving a `Relation`. It can be used to make nicer signatures for the return
+values of `makeOneToOne` and `makeOneToN`
+-}
+type alias Accessor super sub wrap = 
+    (Relation sub sub sub -> Relation super sub wrap)
+  
 
 {-| id is a neutral `Relation`. It is used to end a braid of accessors (see
 the implementation for get, set and over).
