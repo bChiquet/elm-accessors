@@ -9,17 +9,17 @@ import Accessors exposing (Relation, makeOneToN)
 
 {-| This accessor combinator lets you access values inside lists.
 
-    listRecord = {foo = [ {bar = 2}
-                        , {bar = 3}
-                        , {bar = 4}
-                        ]
+    listRecord = { foo = [ {bar = 2}
+                         , {bar = 3}
+                         , {bar = 4}
+                         ]
                  }
 
     get (foo << onEach << bar) listRecord
     -- returns [2, 3, 4] 
 
     over (foo << onEach << bar) ((+) 1) listRecord
-    -- returns {foo = [{bar = 3}, {bar = 4}, {bar = 5}] }
+    -- returns {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 -}
 onEach : Relation super sub wrap -> Relation (List super) sub (List wrap)
 onEach = makeOneToN List.map List.map
