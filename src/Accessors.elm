@@ -103,8 +103,8 @@ over : (Relation sub sub sub -> Relation super sub wrap)
     -> super
     -> super
 over accessor change s = 
-  let (Relation relation) = (accessor id) in
-  relation.over change s
+  let (Relation relation) = (accessor id)
+  in relation.over change s
 
 
 {-| This function lets you build an accessor for containers that have
@@ -115,7 +115,7 @@ foo : Relation field sub wrap -> Relation {rec | foo : field} sub wrap
 foo =
   makeOneToOne
     .foo
-    \change rec -> {rec | foo = change rec.foo }
+    (\change rec -> {rec | foo = change rec.foo })
 ```
 -}
 makeOneToOne :  (super -> sub)
