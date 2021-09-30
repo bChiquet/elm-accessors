@@ -2,7 +2,7 @@
     "version": "2.0.0",
     "summary": "Accessors, a library implementing lenses for Elm.",
     "repository": "https://github.com/bChiquet/elm-accessors.git",
-    "license": "BSD-3-Clause",
+    "license": "MIT",
     "source-directories": [
         "src/"
     ],

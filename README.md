@@ -46,10 +46,10 @@ try =
 Accessors can be composed easily to describe relations:
 
 ```elm
-myData = {foo = [ {bar = 3}
-                , {bar = 2}
-                , {bar = 0}
-                ]
+myData = { foo = [ {bar = 3}
+                 , {bar = 2}
+                 , {bar = 0}
+                 ]
          }
 
 myAccessor = recordFoo << onEach << recordBar
@@ -65,10 +65,10 @@ getter   = get  myAccessor myData
   -- returns [3, 2, 0]
 
 setter   = set  myAccessor 2 myData
-  -- returns {foo = [{bar = 2}, {bar = 2}, {bar = 2}] }
+  -- returns {foo = [{bar = 2}, {bar = 2}, {bar = 2}]}
 
 transform = over myAccessor (\n -> n*2) myData
-  -- returns {foo = [{bar = 6}, {bar = 4}, {bar = 0}] }
+  -- returns {foo = [{bar = 6}, {bar = 4}, {bar = 0}]}
 ```
 
 # Type-safe and reusable
@@ -96,7 +96,7 @@ Any accessor you make can be composed with any other accessor to match your new
 data structures: 
 
 ```elm
-myOtherData = { bar = Just [1, 3, 2] }
+myOtherData = {bar = Just [1, 3, 2]}
 
 halfWay = try << onEach
 myOtherAccessor = recordBar << halfWay
