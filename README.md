@@ -114,9 +114,13 @@ build
 
 ```elm make```
 
-run tests (using 0.18 for now)
+run tests
 
 ```elm-test```
+
+or 
+
+```elm-test-rs```
 
 If you write new accessor combinators that rely on common library datas, I'll be
 happy to review and merge. Please include tests for your combinators.
