@@ -1,11 +1,12 @@
-module Accessors.Library exposing (onEach, try)
+module Accessors.Library exposing (onEach, try, dictEntry)
 
 {-| This library contains common accessors.
 
-@docs onEach, try
+@docs onEach, try, dictEntry
 -}
 
-import Accessors exposing (Relation, makeOneToN)
+import Accessors exposing (Relation, makeOneToOne, makeOneToN)
+import Dict exposing (Dict)
 
 {-| This accessor combinator lets you access values inside lists.
 
@@ -45,3 +46,28 @@ onEach = makeOneToN List.map List.map
 -}
 try : Relation super sub wrap -> Relation (Maybe super) sub (Maybe wrap)
 try = makeOneToN Maybe.map Maybe.map
+
+{-| This accessor combinator lets you access Dict members.
+
+In terms of accessors, think of Dicts as records where each field is a Maybe.
+
+    dict = Dict.fromList [("foo", {bar = 2})]
+
+    get (dictEntry "foo") dict
+    -- returns Just {bar = 2}
+
+    get (dictEntry "baz" dict)
+    -- returns Nothing
+
+    get (dictEntry "foo" << try << bar) dict
+    -- returns Just 2
+
+    set (dictEntry "foo") Nothing dict
+    -- returns Dict.remove "foo" dict
+
+    set (dictEntry "baz" << try << bar) 3 dict
+    -- returns dict
+-}
+dictEntry : comparable -> Relation (Maybe v) reachable wrap -> Relation (Dict comparable v) reachable wrap
+dictEntry key =
+    makeOneToOne (Dict.get key) (Dict.update key)
