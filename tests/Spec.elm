@@ -3,8 +3,9 @@ module Spec exposing (suite)
 import Test exposing (Test, describe, test)
 import Expect
 import Accessors exposing (get, set, over, makeOneToOne, makeOneToN)
-import Accessors.Library exposing (onEach, try)
+import Accessors.Library exposing (onEach, try, dictEntry)
 import Test.Accessors.Record exposing (r)
+import Dict exposing (Dict)
 
 
 simpleRecord = {foo = 3, bar = "Yop", qux = False}
@@ -12,6 +13,9 @@ anotherRecord = {foo = 5, bar = "Sup", qux = True}
 nestedRecord = {foo = simpleRecord}
 recordWithList = {bar = [simpleRecord, anotherRecord]}
 maybeRecord = {bar = Just simpleRecord, foo = Nothing}
+dict = Dict.fromList [("foo", 7)]
+recordWithDict = {bar = dict}
+dictWithRecord = Dict.fromList [("foo", {bar = "Yop"})]
 
 suite : Test
 suite =
@@ -37,6 +41,28 @@ suite =
           Expect.equal
             (get (r.foo << try << r.bar) maybeRecord)
             Nothing
+      , describe "dict"
+            [ test "get present" <| \_ ->
+                  Expect.equal
+                  (get (dictEntry "foo") dict)
+                  (Just 7)
+            , test "get absent" <| \_ ->
+                  Expect.equal
+                  (get (dictEntry "bar") dict)
+                  Nothing
+            , test "nested get present" <| \_ ->
+                  Expect.equal
+                  (get (r.bar << dictEntry "foo") recordWithDict)
+                  (Just 7)
+            , test "nested get absent" <| \_ ->
+                  Expect.equal
+                  (get (r.bar << dictEntry "bar") recordWithDict)
+                  Nothing
+            , test "get with try" <| \_ ->
+                  Expect.equal
+                  (get (dictEntry "foo" << try << r.bar) dictWithRecord)
+                  (Just "Yop")
+            ]
       ]
     , describe "set"
       [ test "simple set" <| \_ ->
@@ -69,6 +95,26 @@ suite =
           in Expect.equal
             (get (r.foo << try << r.bar) updatedExample)
             Nothing
+      , describe "dict"
+            [ test "set currently present to present" <| \_ ->
+                  let updatedDict = set (dictEntry "foo") (Just 9) dict
+                  in Expect.equal (get (dictEntry "foo") updatedDict) (Just 9)
+            , test "set currently absent to present" <| \_ ->
+                  let updatedDict = set (dictEntry "bar") (Just 9) dict
+                  in Expect.equal (get (dictEntry "bar") updatedDict) (Just 9)
+            , test "set currently present to absent" <| \_ ->
+                  let updatedDict = set (dictEntry "foo") Nothing dict
+                  in Expect.equal (get (dictEntry "foo") updatedDict) Nothing
+            , test "set currently absent to absent" <| \_ ->
+                  let updatedDict = set (dictEntry "bar") Nothing dict
+                  in Expect.equal (get (dictEntry "bar") updatedDict) Nothing
+            , test "set with try present" <| \_ ->
+                  let updatedDict = set (dictEntry "foo" << try << r.bar) "Sup" dictWithRecord
+                  in Expect.equal (get (dictEntry "foo" << try << r.bar) updatedDict) (Just "Sup")
+            , test "set with try absent" <| \_ ->
+                  let updatedDict = set (dictEntry "bar" << try << r.bar) "Sup" dictWithRecord
+                  in Expect.equal (get (dictEntry "bar" << try << r.bar) updatedDict) Nothing
+            ]
       ]
     , describe "over"
       [ test "simple over" <| \_ ->
