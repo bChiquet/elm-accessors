@@ -116,11 +116,11 @@ build
 
 run tests
 
-```elm-test```
+`elm-test`
 
 or 
 
-```elm-test-rs```
+`elm-test-rs`
 
 If you write new accessor combinators that rely on common library datas, I'll be
 happy to review and merge. Please include tests for your combinators.
