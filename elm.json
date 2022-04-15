@@ -3,7 +3,7 @@
     "name": "bChiquet/elm-accessors",
     "summary": "Accessors, a library implementing lenses for Elm.",
     "license": "MIT",
-    "version": "2.1.1",
+    "version": "3.0.0",
     "exposed-modules": [
         "Accessors",
         "Accessors.Lazy",
