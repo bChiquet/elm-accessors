@@ -241,7 +241,7 @@ suite =
         , describe "making accessors"
             [ let
                 myFoo =
-                    makeOneToOne ".foo2" .foo (\f rec -> { rec | foo = f rec.foo })
+                    makeOneToOne .foo (\f rec -> { rec | foo = f rec.foo })
               in
               describe "makeOneToOne"
                 [ test "get" <|
@@ -267,7 +267,7 @@ suite =
                 ]
             , let
                 myOnEach =
-                    makeOneToN "[custom]" List.map List.map
+                    makeOneToN List.map List.map
               in
               describe "makeOneToN"
                 [ test "get" <|

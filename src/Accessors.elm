@@ -7,6 +7,7 @@ module Accessors exposing
     , every, ix
     , one, two
     , makeOneToOne, makeOneToN
+    , makeOneToOne_, makeOneToN_
     --, def
     )
 
@@ -48,6 +49,7 @@ specific action on data using that accessor.
 Accessors are built using these functions:
 
 @docs makeOneToOne, makeOneToN
+@docs makeOneToOne_, makeOneToN_
 
 -}
 
@@ -190,12 +192,33 @@ a 1:1 relation with what they contain, such as a record and one of its fields:
 
 -}
 makeOneToOne :
+    (super -> sub)
+    -> ((sub -> sub) -> super -> super)
+    -> Relation sub reachable wrap
+    -> Relation super reachable wrap
+makeOneToOne =
+    makeOneToOne_ ""
+
+
+{-| This exposes a description field that's necessary for use with the name function
+for getting unique names out of compositions of accessors. This is useful when you
+want type safe keys for a Dictionary but you still want to use elm/core implementation.
+
+    foo : Relation field sub wrap -> Relation { rec | foo : field } sub wrap
+    foo =
+        makeOneToOne_
+            ".foo"
+            .foo
+            (\change rec -> { rec | foo = change rec.foo })
+
+-}
+makeOneToOne_ :
     String
     -> (super -> sub)
     -> ((sub -> sub) -> super -> super)
     -> Relation sub reachable wrap
     -> Relation super reachable wrap
-makeOneToOne n getter mapper (Relation sub) =
+makeOneToOne_ n getter mapper (Relation sub) =
     Relation
         { get = \super -> sub.get (getter super)
         , over = \change super -> mapper (sub.over change) super
@@ -217,12 +240,32 @@ n.b. implementing those is usually considerably simpler than the type suggests.
 
 -}
 makeOneToN :
+    ((sub -> subWrap) -> super -> superWrap)
+    -> ((sub -> sub) -> super -> super)
+    -> Relation sub reachable subWrap
+    -> Relation super reachable superWrap
+makeOneToN =
+    makeOneToN_ ""
+
+
+{-| This exposes a description field that's necessary for use with the name function
+for getting unique names out of compositions of accessors. This is useful when you
+want type safe keys for a Dictionary but you still want to use elm/core implementation.
+
+    onEach : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
+    onEach =
+        makeOneToN_ "[]"
+            List.map
+            List.map
+
+-}
+makeOneToN_ :
     String
     -> ((sub -> subWrap) -> super -> superWrap)
     -> ((sub -> sub) -> super -> super)
     -> Relation sub reachable subWrap
     -> Relation super reachable superWrap
-makeOneToN n getter mapper (Relation sub) =
+makeOneToN_ n getter mapper (Relation sub) =
     Relation
         { get = \super -> getter sub.get super
         , over = \change super -> mapper (sub.over change) super
@@ -251,7 +294,7 @@ makeOneToN n getter mapper (Relation sub) =
 -}
 each : Relation super sub wrap -> Relation (List super) sub (List wrap)
 each =
-    makeOneToN ":[]" List.map List.map
+    makeOneToN_ ":[]" List.map List.map
 
 
 {-| This accessor combinator lets you access values inside Array.
@@ -275,7 +318,7 @@ each =
 -}
 every : Relation super sub wrap -> Relation (Array super) sub (Array wrap)
 every =
-    makeOneToN "[]" Array.map Array.map
+    makeOneToN_ "[]" Array.map Array.map
 
 
 {-| This accessor combinator lets you access values inside Maybe.
@@ -303,7 +346,7 @@ every =
 -}
 try : Relation sub path wrap -> Relation (Maybe sub) path (Maybe wrap)
 try =
-    makeOneToN "?" Maybe.map Maybe.map
+    makeOneToN_ "?" Maybe.map Maybe.map
 
 
 
@@ -359,7 +402,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 key : comparable -> Relation (Maybe v) reachable wrap -> Relation (Dict comparable v) reachable wrap
 key k =
-    makeOneToOne "{}" (Dict.get k) (Dict.update k)
+    makeOneToOne_ "{}" (Dict.get k) (Dict.update k)
 
 
 {-| This accessor combinator lets you access Dict members.
@@ -390,7 +433,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
 at idx =
-    makeOneToOne ("(" ++ String.fromInt idx ++ ")")
+    makeOneToOne_ ("(" ++ String.fromInt idx ++ ")")
         (if idx < 0 then
             always Nothing
 
@@ -443,7 +486,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 ix : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
 ix idx =
-    makeOneToOne
+    makeOneToOne_
         ("[" ++ String.fromInt idx ++ "]")
         (Array.get idx)
         (\fn ->
@@ -491,7 +534,7 @@ ix idx =
 -}
 one : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
 one =
-    makeOneToOne "_1" Tuple.first Tuple.mapFirst
+    makeOneToOne_ "_1" Tuple.first Tuple.mapFirst
 
 
 {-|
@@ -516,4 +559,4 @@ one =
 -}
 two : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
 two =
-    makeOneToOne "_2" Tuple.second Tuple.mapSecond
+    makeOneToOne_ "_2" Tuple.second Tuple.mapSecond
