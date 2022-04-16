@@ -57,8 +57,12 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 
 
-type alias Property s a wrap =
-    Relation a a a -> Relation s a wrap
+{-| This seems to be what's technically called a `Setter` in the lens heirarchy and won't
+qualify as a lens but not 100% certain that's what it actually is.
+-}
+type alias Property structure attribute wrap =
+    Relation attribute attribute attribute
+    -> Relation structure attribute wrap
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -90,7 +94,8 @@ type alias
         -- Focus After action
         built
     =
-    Relation attribute built transformed -> Relation structure built transformed
+    Relation attribute built transformed
+    -> Relation structure built transformed
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
@@ -246,10 +251,9 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToOne_ :
     String
-    -> (super -> sub)
-    -> ((sub -> sub) -> super -> super)
-    -> Relation sub reachable wrap
-    -> Relation super reachable wrap
+    -> (structure -> attribute)
+    -> ((attribute -> attribute) -> structure -> structure)
+    -> Lens structure transformed attribute built
 makeOneToOne_ n getter mapper (Relation sub) =
     Relation
         { get = \super -> sub.get (getter super)
@@ -262,8 +266,8 @@ makeOneToOne_ n getter mapper (Relation sub) =
 a 1:N relation with what they contain, such as `List` (0-N cardinality) or
 `Maybe` (0-1). E.g.:
 
-    onEach : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
-    onEach =
+    each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
+    each =
         makeOneToN
             List.map
             List.map
@@ -272,10 +276,10 @@ n.b. implementing those is usually considerably simpler than the type suggests.
 
 -}
 makeOneToN :
-    ((sub -> subWrap) -> super -> superWrap)
-    -> ((sub -> sub) -> super -> super)
-    -> Relation sub reachable subWrap
-    -> Relation super reachable superWrap
+    ((attribute -> built) -> structure -> transformed)
+    -> ((attribute -> attribute) -> structure -> structure)
+    -- What is reachable here? And this is obviously not Lens so?
+    -> (Relation attribute reachable built -> Relation structure reachable transformed)
 makeOneToN =
     makeOneToN_ ""
 
@@ -284,8 +288,8 @@ makeOneToN =
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    onEach : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
-    onEach =
+    each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
+    each =
         makeOneToN_ "[]"
             List.map
             List.map
@@ -293,10 +297,11 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToN_ :
     String
-    -> ((sub -> subWrap) -> super -> superWrap)
-    -> ((sub -> sub) -> super -> super)
-    -> Relation sub reachable subWrap
-    -> Relation super reachable superWrap
+    -> ((attribute -> built) -> structure -> transformed)
+    -> ((attribute -> attribute) -> structure -> structure)
+    -- What is reachable here?
+    -> Relation attribute reachable built
+    -> Relation structure reachable transformed
 makeOneToN_ n getter mapper (Relation sub) =
     Relation
         { get = \super -> getter sub.get super
@@ -324,7 +329,7 @@ makeOneToN_ n getter mapper (Relation sub) =
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each : Relation super sub wrap -> Relation (List super) sub (List wrap)
+each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
 each =
     makeOneToN_ ":[]" List.map List.map
 
