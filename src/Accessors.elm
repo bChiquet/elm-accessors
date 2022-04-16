@@ -1,5 +1,5 @@
 module Accessors exposing
-    ( Relation, Property
+    ( Relation, Property, Lens
     , get, set, over, name
     , try
     , key
@@ -24,7 +24,7 @@ structures without handling the packing and the unpacking.
 
 # Relation
 
-@docs Relation, Property
+@docs Relation, Property, Lens
 
 
 # Action functions
@@ -59,6 +59,38 @@ import Dict exposing (Dict)
 
 type alias Property s a wrap =
     Relation a a a -> Relation s a wrap
+
+
+{-| This is an approximation of Van Laarhoven encoded Lenses which enable the
+the callers to use regular function composition to build more complex nested
+updates of more complicated types.
+
+But the original "Lens" type looked more like:
+
+    type alias Lens structure attribute =
+        { get : structure -> attribute
+        , set : structure -> attribute -> structure
+        }
+
+unfortunately these can't be composed without
+defining custom `composeLens`, `composeIso`, `composePrism`, style functions.
+
+whereas with this approach we're able to make use of Elm's built in `<<` operator
+to get/set/over deeply nested data.
+
+-}
+type alias
+    Lens
+        -- Before Action
+        structure
+        -- After Action
+        transformed
+        -- Focus Before action
+        attribute
+        -- Focus After action
+        built
+    =
+    Relation attribute built transformed -> Relation structure built transformed
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
