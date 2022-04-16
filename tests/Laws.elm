@@ -1,6 +1,7 @@
 module Laws exposing (..)
 
 import Accessors as A exposing (Property, Relation)
+import Array exposing (Array)
 import Dict exposing (Dict)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, string)
@@ -21,6 +22,7 @@ type alias Person =
     , email : Maybe String
     , stuff : List String
     , info : Dict String String
+    , things : Array String
     }
 
 
@@ -32,6 +34,8 @@ suite =
         , isProperty (R.email << A.try) personFuzzer strFun string
         , isProperty (R.stuff << A.at 0) personFuzzer strFun string
         , isProperty (R.stuff << A.each) personFuzzer strFun string
+        , isProperty (R.things << A.ix 0) personFuzzer strFun string
+        , isProperty (R.things << A.every) personFuzzer strFun string
         , isProperty (R.info << A.key "stuff") personFuzzer maybeStrFun (Fuzz.maybe string)
         , test "Name compositions output `jq` style String's" <|
             \() ->
@@ -81,12 +85,13 @@ maybeStrFun =
 
 personFuzzer : Fuzzer Person
 personFuzzer =
-    Fuzz.map5 Person
-        string
-        int
-        (Fuzz.maybe string)
-        (Fuzz.list string)
-        (Fuzz.list (Fuzz.tuple ( string, string )) |> Fuzz.map Dict.fromList)
+    Fuzz.map (\_ -> Person) Fuzz.unit
+        |> Fuzz.andMap string
+        |> Fuzz.andMap int
+        |> Fuzz.andMap (Fuzz.maybe string)
+        |> Fuzz.andMap (Fuzz.list string)
+        |> Fuzz.andMap (Fuzz.list (Fuzz.tuple ( string, string )) |> Fuzz.map Dict.fromList)
+        |> Fuzz.andMap (Fuzz.list string |> Fuzz.map Array.fromList)
 
 
 isProperty : Property s a wrap -> Fuzzer s -> Fuzzer (Fun a) -> Fuzzer a -> Test

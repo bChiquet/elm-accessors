@@ -1,4 +1,4 @@
-module Test.Accessors.Record exposing (age, bar, email, foo, info, name, qux, stuff)
+module Test.Accessors.Record exposing (age, bar, email, foo, info, name, qux, stuff, things)
 
 import Accessors exposing (Relation, makeOneToOne)
 
@@ -36,6 +36,11 @@ email =
 stuff : Relation b reachable wrap -> Relation { a | stuff : b } reachable wrap
 stuff =
     makeOneToOne ".stuff" .stuff (\fn rec -> { rec | stuff = fn rec.stuff })
+
+
+things : Relation b reachable wrap -> Relation { a | things : b } reachable wrap
+things =
+    makeOneToOne ".things" .things (\fn rec -> { rec | things = fn rec.things })
 
 
 info : Relation b reachable wrap -> Relation { a | info : b } reachable wrap
