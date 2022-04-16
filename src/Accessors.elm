@@ -1,12 +1,13 @@
 module Accessors exposing
     ( Relation, Property
     , get, set, over, name
-    , try, def
+    , try
     , key
     , each, at
     , every, ix
     , one, two
     , makeOneToOne, makeOneToN
+    --, def
     )
 
 {-| Relations are interfaces to document the relation between two data
@@ -231,17 +232,21 @@ makeOneToN n getter mapper (Relation sub) =
 
 {-| This accessor combinator lets you access values inside List.
 
+    import Accessors exposing (..)
+    import Test.Accessors.Record as R
+
+    listRecord : {foo : List {bar : Int}}
     listRecord = { foo = [ {bar = 2}
                          , {bar = 3}
                          , {bar = 4}
                          ]
                  }
 
-    get (foo << each << bar) listRecord
-    -- returns [2, 3, 4]
+    get (R.foo << each << R.bar) listRecord
+    --> [2, 3, 4]
 
-    over (foo << each << bar) ((+) 1) listRecord
-    -- returns {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
+    over (R.foo << each << R.bar) ((+) 1) listRecord
+    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
 each : Relation super sub wrap -> Relation (List super) sub (List wrap)
@@ -251,16 +256,21 @@ each =
 
 {-| This accessor combinator lets you access values inside Array.
 
+    import Array exposing (Array)
+    import Accessors exposing (..)
+    import Test.Accessors.Record as R
+
+    arrayRecord : {foo : Array {bar : Int}}
     arrayRecord =
         { foo =
             Array.fromList [{ bar = 2 }, { bar = 3 }, {bar = 4}]
         }
 
-    get (foo << each << bar) arrayRecord
-    -- returns [2, 3, 4]
+    get (R.foo << every << R.bar) arrayRecord
+    --> Array.fromList [2, 3, 4]
 
-    over (foo << each << bar) ((+) 1) arrayRecord
-    -- returns {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
+    over (R.foo << every << R.bar) ((+) 1) arrayRecord
+    --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
 every : Relation super sub wrap -> Relation (Array super) sub (Array wrap)
@@ -270,21 +280,25 @@ every =
 
 {-| This accessor combinator lets you access values inside Maybe.
 
-    maybeRecord = { foo = Just {bar = 2}
+    import Accessors exposing (..)
+    import Test.Accessors.Record as R
+
+    maybeRecord : { foo : Maybe { bar : Int }, qux : Maybe { bar : Int } }
+    maybeRecord = { foo = Just { bar = 2 }
                   , qux = Nothing
                   }
 
-    get (foo << try << bar) maybeRecord
-    -- returns Just 2
+    get (R.foo << try << R.bar) maybeRecord
+    --> Just 2
 
-    get (qux << try << bar) maybeRecord
-    -- returns Nothing
+    get (R.qux << try << R.bar) maybeRecord
+    --> Nothing
 
-    over (foo << try << bar) ((+) 1) maybeRecord
-    -- returns {foo = Just {bar = 3}, qux = Nothing}
+    over (R.foo << try << R.bar) ((+) 1) maybeRecord
+    --> {foo = Just {bar = 3}, qux = Nothing}
 
-    over (qux << try << bar) ((+) 1) maybeRecord
-    -- returns {foo = Just {bar = 2}, qux = Nothing}
+    over (R.qux << try << R.bar) ((+) 1) maybeRecord
+    --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
 try : Relation sub path wrap -> Relation (Maybe sub) path (Maybe wrap)
@@ -292,48 +306,55 @@ try =
     makeOneToN "?" Maybe.map Maybe.map
 
 
-{-| This accessor combinator lets you provide a default value for otherwise failable compositions
 
-    dict = Dict.fromList [("foo", {bar = 2})]
-
-    get (key "foo" << def {bar = 0}) dict
-    -- returns {bar = 2}
-
-    get (key "baz" << def {bar = 0}) dict
-    -- returns {bar = 0}
-
-    get (key "foo" << try << bar << def 0) dict
-    -- returns 2
-
-    get (key "baz" << try << bar << def 0) dict
-    -- returns 0
-
--}
-def : b -> Relation b reachable wrap -> Relation (Maybe b) reachable wrap
-def d =
-    makeOneToOne "??" (Maybe.withDefault d) Maybe.map
+--{-| This accessor combinator lets you provide a default value for otherwise failable compositions
+--  TODO: Doesn't do what is expected... :/
+--    import Dict exposing (Dict)
+--    import Test.Accessors.Record as R
+--    dict : Dict String {bar : Int}
+--    dict =
+--        Dict.fromList [("foo", {bar = 2})]
+--    get (key "foo" << def {bar = 0}) dict
+--    --> {bar = 2}
+--    get (key "baz" << def {bar = 0}) dict
+--    --> {bar = 0}
+--    get (key "foo" << try << R.bar << def 0) dict
+--    --> 2
+--    get (key "baz" << try << R.bar << def 0) dict
+--    --> 0
+---}
+--def : sub -> Relation sub reachable sub -> Relation (Maybe sub) reachable sub
+--def d =
+--    makeOneToN "??"
+--        (\f -> over try f >> Maybe.withDefault d)
+--        Maybe.map
 
 
 {-| This accessor combinator lets you access Dict members.
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
+    import Dict exposing (Dict)
+    import Accessors exposing (..)
+    import Test.Accessors.Record as R
+
+    dict : Dict String {bar : Int}
     dict = Dict.fromList [("foo", {bar = 2})]
 
-    get (dictEntry "foo") dict
-    -- returns Just {bar = 2}
+    get (key "foo") dict
+    --> Just {bar = 2}
 
-    get (dictEntry "baz" dict)
-    -- returns Nothing
+    get (key "baz") dict
+    --> Nothing
 
-    get (dictEntry "foo" << try << bar) dict
-    -- returns Just 2
+    get (key "foo" << try << R.bar) dict
+    --> Just 2
 
-    set (dictEntry "foo") Nothing dict
-    -- returns Dict.remove "foo" dict
+    set (key "foo") Nothing dict
+    --> Dict.remove "foo" dict
 
-    set (dictEntry "baz" << try << bar) 3 dict
-    -- returns dict
+    set (key "baz" << try << R.bar) 3 dict
+    --> dict
 
 -}
 key : comparable -> Relation (Maybe v) reachable wrap -> Relation (Dict comparable v) reachable wrap
@@ -341,6 +362,32 @@ key k =
     makeOneToOne "{}" (Dict.get k) (Dict.update k)
 
 
+{-| This accessor combinator lets you access Dict members.
+
+In terms of accessors, think of Dicts as records where each field is a Maybe.
+
+    import Accessors exposing (..)
+    import Test.Accessors.Record as R
+
+    list : List { bar : String }
+    list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    get (at 1) list
+    --> Just { bar = "Things" }
+
+    get (at 9000) list
+    --> Nothing
+
+    get (at 0 << R.bar) list
+    --> Just "Stuff"
+
+    set (at 0 << R.bar) "Whatever" list
+    --> [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    set (at 9000 << R.bar) "Whatever" list
+    --> list
+
+-}
 at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
 at idx =
     makeOneToOne ("(" ++ String.fromInt idx ++ ")")
@@ -367,6 +414,33 @@ at idx =
         << try
 
 
+{-| This accessor combinator lets you access Dict members.
+
+In terms of accessors, think of Dicts as records where each field is a Maybe.
+
+    import Array exposing (Array)
+    import Accessors exposing (..)
+    import Test.Accessors.Record as R
+
+    arr : Array { bar : String }
+    arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    get (ix 1) arr
+    --> Just { bar = "Things" }
+
+    get (ix 9000) arr
+    --> Nothing
+
+    get (ix 0 << R.bar) arr
+    --> Just "Stuff"
+
+    set (ix 0 << R.bar) "Whatever" arr
+    --> Array.fromList [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    set (ix 9000 << R.bar) "Whatever" arr
+    --> arr
+
+-}
 ix : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
 ix idx =
     makeOneToOne
@@ -398,11 +472,48 @@ ix idx =
         << try
 
 
+{-| Lens over the first component of a Tuple
+
+    import Accessors exposing (..)
+
+    charging : (String, Int)
+    charging = ("It's over", 1)
+
+    get one charging
+    --> "It's over"
+
+    set one "It's over" charging
+    --> ("It's over", 1)
+
+    over one (\s -> String.toUpper s ++ "!!!") charging
+    --> ("IT'S OVER!!!", 1)
+
+-}
 one : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
 one =
     makeOneToOne "_1" Tuple.first Tuple.mapFirst
 
 
+{-|
+
+    import Accessors exposing (..)
+
+    meh : (String, Int)
+    meh = ("It's over", 1)
+
+    get two meh
+    --> 1
+
+    set two 1125 meh
+    --> ("It's over", 1125)
+
+    meh
+        |> set two 1125
+        |> over one (\s -> String.toUpper s ++ "!!!")
+        |> over two ((*) 8)
+    --> ("IT'S OVER!!!", 9000)
+
+-}
 two : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
 two =
     makeOneToOne "_2" Tuple.second Tuple.mapSecond
