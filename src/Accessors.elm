@@ -1,5 +1,5 @@
 module Accessors exposing
-    ( Relation, Accessor, Lens
+    ( Relation, Accessor, Lens, Lens_, Setable
     , get, set, over, name
     , try
     , key
@@ -8,9 +8,9 @@ module Accessors exposing
     , one, two
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
-    --, Getable, Setable
     --, def
     --, Modifiable
+    --, Getable
     )
 
 {-| Relations are interfaces to document the relation between two data
@@ -26,7 +26,7 @@ structures without handling the packing and the unpacking.
 
 # Relation
 
-@docs Relation, Accessor, Lens, Getable, Setable, Modifiable
+@docs Relation, Accessor, Lens, Lens_, Getable, Setable, Modifiable
 
 
 # Action functions
@@ -95,20 +95,22 @@ type alias
         -- Focus After action
         built
     =
-    -- Accessor structure
-    --     transformed
-    --     attribute
-    --     transformed
     Relation attribute built transformed
     -> Relation structure built transformed
+
+
+type alias Lens_ structure attribute =
+    Lens structure attribute attribute attribute
 
 
 
 -- type alias Getable structure transformed attribute built reachable =
 --     Relation attribute built attribute
 --     -> Relation structure reachable transformed
--- type alias Setable structure transformed attribute built =
---     Relation attribute attribute built -> Relation structure attribute transformed
+
+
+type alias Setable structure transformed attribute built =
+    Relation attribute attribute built -> Relation structure attribute transformed
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a

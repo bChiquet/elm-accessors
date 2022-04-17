@@ -1,6 +1,6 @@
 module Laws exposing (..)
 
-import Accessors as A exposing (Lens, Relation)
+import Accessors as A exposing (Accessor, Lens_, Relation, Setable)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Expect exposing (Expectation)
@@ -94,17 +94,7 @@ personFuzzer =
         |> Fuzz.andMap (Fuzz.list string |> Fuzz.map Array.fromList)
 
 
-
--- isSetable :
---     (Relation attribute attribute built
---      -> Relation structure attribute transformed
---     )
---     -> Fuzzer structure
---     -> Fuzzer (Function attribute)
---     -> Fuzzer attribute
---     -> Test
-
-
+isSetable : Setable structure transformed attribute built -> Fuzzer structure -> Fuzzer (Function attribute) -> Fuzzer attribute -> Test
 isSetable l fzr fnFzr val =
     describe ("isSetable: " ++ A.name l)
         [ fuzz fzr
@@ -128,7 +118,7 @@ isSetable l fzr fnFzr val =
 
 
 isLens :
-    (Relation attribute attribute attribute -> Relation structure attribute attribute)
+    Lens_ structure attribute
     -> Fuzzer structure
     -> Fuzzer (Function attribute)
     -> Fuzzer attribute
@@ -148,20 +138,13 @@ isLens l fzr valFn val =
         ]
 
 
-setter_id :
-    (Relation attribute attribute built
-     -> Relation structure attribute transformed
-    )
-    -> structure
-    -> Bool
+setter_id : Setable structure transformed attribute built -> structure -> Bool
 setter_id l s =
     A.over l identity s == s
 
 
 setter_composition :
-    (Relation attribute attribute built
-     -> Relation structure attribute transformed
-    )
+    Setable structure transformed attribute built
     -> structure
     -> Function attribute
     -> Function attribute
@@ -171,9 +154,7 @@ setter_composition l s f g =
 
 
 setter_set_set :
-    (Relation attribute attribute built
-     -> Relation structure attribute transformed
-    )
+    Setable structure transformed attribute built
     -> structure
     -> attribute
     -> attribute
@@ -182,22 +163,11 @@ setter_set_set l s a b =
     A.set l b (A.set l a s) == A.set l b s
 
 
-lens_set_get :
-    (Relation attribute attribute attribute
-     -> Relation structure attribute attribute
-    )
-    -> structure
-    -> Bool
+lens_set_get : Lens_ structure attribute -> structure -> Bool
 lens_set_get l s =
     A.set l (A.get l s) s == s
 
 
-lens_get_set :
-    (Relation attribute attribute attribute
-     -> Relation structure attribute attribute
-    )
-    -> structure
-    -> attribute
-    -> Bool
+lens_get_set : Lens_ structure attribute -> structure -> attribute -> Bool
 lens_get_set l s a =
     A.get l (A.set l a s) == a
