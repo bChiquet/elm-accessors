@@ -1,5 +1,5 @@
 module Accessors exposing
-    ( Relation, Accessor, Lens, Getable, Setable
+    ( Relation, Accessor, Lens
     , get, set, over, name
     , try
     , key
@@ -8,6 +8,7 @@ module Accessors exposing
     , one, two
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
+    --, Getable, Setable
     --, def
     --, Modifiable
     )
@@ -102,13 +103,12 @@ type alias
     -> Relation structure built transformed
 
 
-type alias Getable structure transformed attribute built reachable =
-    Relation attribute built attribute
-    -> Relation structure reachable transformed
 
-
-type alias Setable structure transformed attribute built =
-    Relation attribute attribute built -> Relation structure attribute transformed
+-- type alias Getable structure transformed attribute built reachable =
+--     Relation attribute built attribute
+--     -> Relation structure reachable transformed
+-- type alias Setable structure transformed attribute built =
+--     Relation attribute attribute built -> Relation structure attribute transformed
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
@@ -141,7 +141,12 @@ get (foo << bar) myRecord
 ```
 
 -}
-get : Getable structure transformed any1 any2 any3 -> structure -> transformed
+get :
+    (Relation attribute built attribute
+     -> Relation structure reachable transformed
+    )
+    -> structure
+    -> transformed
 get accessor s =
     let
         (Relation relation) =
@@ -179,7 +184,13 @@ set (foo << bar) "Hi!" myRecord
 ```
 
 -}
-set : Setable structure transformed attribute built -> attribute -> structure -> structure
+set :
+    (Relation attribute attribute built
+     -> Relation structure attribute transformed
+    )
+    -> attribute
+    -> structure
+    -> structure
 set accessor value s =
     let
         (Relation relation) =

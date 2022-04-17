@@ -1,6 +1,6 @@
 module Laws exposing (..)
 
-import Accessors as A exposing (Lens, Setable)
+import Accessors as A exposing (Lens, Relation)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Expect exposing (Expectation)
@@ -36,7 +36,7 @@ suite =
         , isSetable (L.stuff << A.each) personFuzzer strFun string
         , isSetable (L.things << A.ix 0) personFuzzer strFun string
         , isSetable (L.things << A.every) personFuzzer strFun string
-        , isSetable (L.info << A.key "stuff") personFuzzer maybeStrFun (Fuzz.maybe string)
+        , isLens (L.info << A.key "stuff") personFuzzer maybeStrFun (Fuzz.maybe string)
         , test "Name compositions output `jq` style String's" <|
             \() ->
                 A.name (L.info << L.stuff << A.at 7 << L.name)
@@ -94,12 +94,17 @@ personFuzzer =
         |> Fuzz.andMap (Fuzz.list string |> Fuzz.map Array.fromList)
 
 
-isSetable :
-    Setable structure transformed attribute built
-    -> Fuzzer structure
-    -> Fuzzer (Function attribute)
-    -> Fuzzer attribute
-    -> Test
+
+-- isSetable :
+--     (Relation attribute attribute built
+--      -> Relation structure attribute transformed
+--     )
+--     -> Fuzzer structure
+--     -> Fuzzer (Function attribute)
+--     -> Fuzzer attribute
+--     -> Test
+
+
 isSetable l fzr fnFzr val =
     describe ("isSetable: " ++ A.name l)
         [ fuzz fzr
@@ -122,7 +127,12 @@ isSetable l fzr fnFzr val =
         ]
 
 
-isLens : Lens structure transformed attribute built -> Fuzzer s -> Fuzzer (Function a) -> Fuzzer a -> Test
+isLens :
+    (Relation attribute attribute attribute -> Relation structure attribute attribute)
+    -> Fuzzer structure
+    -> Fuzzer (Function attribute)
+    -> Fuzzer attribute
+    -> Test
 isLens l fzr valFn val =
     describe ("isLens: " ++ A.name l)
         [ isSetable l fzr valFn val
@@ -138,13 +148,20 @@ isLens l fzr valFn val =
         ]
 
 
-setter_id : Setable structure transformed attribute built -> structure -> Bool
+setter_id :
+    (Relation attribute attribute built
+     -> Relation structure attribute transformed
+    )
+    -> structure
+    -> Bool
 setter_id l s =
     A.over l identity s == s
 
 
 setter_composition :
-    Setable structure transformed attribute built
+    (Relation attribute attribute built
+     -> Relation structure attribute transformed
+    )
     -> structure
     -> Function attribute
     -> Function attribute
@@ -154,7 +171,9 @@ setter_composition l s f g =
 
 
 setter_set_set :
-    Setable structure transformed attribute built
+    (Relation attribute attribute built
+     -> Relation structure attribute transformed
+    )
     -> structure
     -> attribute
     -> attribute
@@ -164,7 +183,9 @@ setter_set_set l s a b =
 
 
 lens_set_get :
-    Lens structure transformed attribute built
+    (Relation attribute attribute attribute
+     -> Relation structure attribute attribute
+    )
     -> structure
     -> Bool
 lens_set_get l s =
@@ -172,7 +193,9 @@ lens_set_get l s =
 
 
 lens_get_set :
-    Lens structure transformed attribute built
+    (Relation attribute attribute attribute
+     -> Relation structure attribute attribute
+    )
     -> structure
     -> attribute
     -> Bool
