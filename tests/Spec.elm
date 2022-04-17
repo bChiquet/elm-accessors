@@ -4,7 +4,7 @@ import Accessors exposing (each, get, key, makeOneToN, makeOneToOne, over, set, 
 import Dict exposing (Dict)
 import Expect
 import Test exposing (Test, describe, test)
-import Test.Accessors.Record as R
+import Lens as L
 
 
 simpleRecord : { foo : number, bar : String, qux : Bool }

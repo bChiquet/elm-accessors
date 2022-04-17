@@ -7,7 +7,7 @@ import Test
 import Expect
 
 import Accessors exposing (..)
-import Test.Accessors.Record as R
+import Lens as L
 import Accessors exposing (..)
 
 

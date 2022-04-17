@@ -1,14 +1,15 @@
 module Accessors exposing
-    ( Relation, Property, Lens
+    ( Relation, Accessor, Lens, Getable, Setable
     , get, set, over, name
     , try
     , key
-    , each, at
+    , each, at, eachIdx
     , every, ix
     , one, two
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
     --, def
+    --, Modifiable
     )
 
 {-| Relations are interfaces to document the relation between two data
@@ -24,7 +25,7 @@ structures without handling the packing and the unpacking.
 
 # Relation
 
-@docs Relation, Property, Lens
+@docs Relation, Accessor, Lens, Getable, Setable, Modifiable
 
 
 # Action functions
@@ -39,7 +40,7 @@ specific action on data using that accessor.
 
 @docs try, def
 @docs key
-@docs each, at
+@docs each, at, eachIdx
 @docs every, ix
 @docs one, two
 
@@ -57,12 +58,11 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 
 
-{-| This seems to be what's technically called a `Setter` in the lens heirarchy and won't
-qualify as a lens but not 100% certain that's what it actually is.
+{-| The most general version of this type that everything else specializes
 -}
-type alias Property structure attribute wrap =
-    Relation attribute attribute attribute
-    -> Relation structure attribute wrap
+type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable wrap =
+    Relation attrBefore wrap attrAfter
+    -> Relation dataBefore reachable dataAfter
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -94,8 +94,21 @@ type alias
         -- Focus After action
         built
     =
+    -- Accessor structure
+    --     transformed
+    --     attribute
+    --     transformed
     Relation attribute built transformed
     -> Relation structure built transformed
+
+
+type alias Getable structure transformed attribute built reachable =
+    Relation attribute built attribute
+    -> Relation structure reachable transformed
+
+
+type alias Setable structure transformed attribute built =
+    Relation attribute attribute built -> Relation structure attribute transformed
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
@@ -117,18 +130,6 @@ type Relation super sub wrap
         }
 
 
-{-| id is a neutral `Relation`. It is used to end a braid of accessors (see
-the implementation for get, set and over).
--}
-id : Relation a a a
-id =
-    Relation
-        { get = \a -> a
-        , over = \change -> \a -> change a
-        , name = ""
-        }
-
-
 {-| The get function takes:
 
   - An accessor,
@@ -140,22 +141,27 @@ get (foo << bar) myRecord
 ```
 
 -}
-get : Property super sub wrap -> super -> wrap
+get : Getable structure transformed any1 any2 any3 -> structure -> transformed
 get accessor s =
     let
         (Relation relation) =
-            accessor id
+            accessor (Relation { get = \super -> super, over = void, name = "" })
     in
     relation.get s
 
 
+void : a -> b
+void super =
+    void super
+
+
 {-| This function gives the name of the function as a string...
 -}
-name : Property super sub wrap -> String
+name : Accessor a b c d e f -> String
 name accessor =
     let
         (Relation relation) =
-            accessor id
+            accessor (Relation { get = void, over = void, name = "" })
     in
     relation.name
 
@@ -173,20 +179,21 @@ set (foo << bar) "Hi!" myRecord
 ```
 
 -}
-set : Property super sub wrap -> sub -> super -> super
+set : Setable structure transformed attribute built -> attribute -> structure -> structure
 set accessor value s =
     let
         (Relation relation) =
-            accessor id
+            accessor (Relation { get = void, over = \fn -> fn, name = "" })
 
         newSuper =
             relation.over (\_ -> value) s
     in
-    if get accessor newSuper /= get accessor s then
-        newSuper
+    newSuper
 
-    else
-        s
+
+
+-- type alias Modifiable =
+--    Relation attribute x y -> Relation structure a transformed
 
 
 {-| The over function takes:
@@ -202,20 +209,17 @@ over (foo << qux) ((+) 1) myRecord
 ```
 
 -}
-over : Property super sub wrap -> (sub -> sub) -> super -> super
+over :
+    (Relation attribute attribute y -> Relation structure attribute transformed)
+    -> (attribute -> attribute)
+    -> structure
+    -> structure
 over accessor change s =
     let
         (Relation relation) =
-            accessor id
-
-        newSuper =
-            relation.over change s
+            accessor (Relation { get = void, over = \fn -> fn, name = "" })
     in
-    if get accessor newSuper /= get accessor s then
-        newSuper
-
-    else
-        s
+    relation.over change s
 
 
 {-| This function lets you build an accessor for containers that have
@@ -313,7 +317,7 @@ makeOneToN_ n getter mapper (Relation sub) =
 {-| This accessor combinator lets you access values inside List.
 
     import Accessors exposing (..)
-    import Test.Accessors.Record as R
+    import Lens as L
 
     listRecord : {foo : List {bar : Int}}
     listRecord = { foo = [ {bar = 2}
@@ -322,10 +326,10 @@ makeOneToN_ n getter mapper (Relation sub) =
                          ]
                  }
 
-    get (R.foo << each << R.bar) listRecord
+    get (L.foo << each << L.bar) listRecord
     --> [2, 3, 4]
 
-    over (R.foo << each << R.bar) ((+) 1) listRecord
+    over (L.foo << each << L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -334,11 +338,22 @@ each =
     makeOneToN_ ":[]" List.map List.map
 
 
+eachIdx : Relation ( Int, attribute ) reachable ( Int, built ) -> Relation (List attribute) reachable (List built)
+eachIdx =
+    let
+        -- asdf : (( Int, attribute ) -> ( Int, built )) -> List attribute -> List built
+        asdf fn =
+            List.indexedMap
+                (\idx -> Tuple.pair idx >> fn >> Tuple.second)
+    in
+    makeOneToN_ "#[]" asdf asdf
+
+
 {-| This accessor combinator lets you access values inside Array.
 
     import Array exposing (Array)
     import Accessors exposing (..)
-    import Test.Accessors.Record as R
+    import Lens as L
 
     arrayRecord : {foo : Array {bar : Int}}
     arrayRecord =
@@ -346,10 +361,10 @@ each =
             Array.fromList [{ bar = 2 }, { bar = 3 }, {bar = 4}]
         }
 
-    get (R.foo << every << R.bar) arrayRecord
+    get (L.foo << every << L.bar) arrayRecord
     --> Array.fromList [2, 3, 4]
 
-    over (R.foo << every << R.bar) ((+) 1) arrayRecord
+    over (L.foo << every << L.bar) ((+) 1) arrayRecord
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -361,23 +376,23 @@ every =
 {-| This accessor combinator lets you access values inside Maybe.
 
     import Accessors exposing (..)
-    import Test.Accessors.Record as R
+    import Lens as L
 
     maybeRecord : { foo : Maybe { bar : Int }, qux : Maybe { bar : Int } }
     maybeRecord = { foo = Just { bar = 2 }
                   , qux = Nothing
                   }
 
-    get (R.foo << try << R.bar) maybeRecord
+    get (L.foo << try << L.bar) maybeRecord
     --> Just 2
 
-    get (R.qux << try << R.bar) maybeRecord
+    get (L.qux << try << L.bar) maybeRecord
     --> Nothing
 
-    over (R.foo << try << R.bar) ((+) 1) maybeRecord
+    over (L.foo << try << L.bar) ((+) 1) maybeRecord
     --> {foo = Just {bar = 3}, qux = Nothing}
 
-    over (R.qux << try << R.bar) ((+) 1) maybeRecord
+    over (L.qux << try << L.bar) ((+) 1) maybeRecord
     --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
@@ -390,7 +405,7 @@ try =
 --{-| This accessor combinator lets you provide a default value for otherwise failable compositions
 --  TODO: Doesn't do what is expected... :/
 --    import Dict exposing (Dict)
---    import Test.Accessors.Record as R
+--    import Lens as L
 --    dict : Dict String {bar : Int}
 --    dict =
 --        Dict.fromList [("foo", {bar = 2})]
@@ -398,9 +413,9 @@ try =
 --    --> {bar = 2}
 --    get (key "baz" << def {bar = 0}) dict
 --    --> {bar = 0}
---    get (key "foo" << try << R.bar << def 0) dict
+--    get (key "foo" << try << L.bar << def 0) dict
 --    --> 2
---    get (key "baz" << try << R.bar << def 0) dict
+--    get (key "baz" << try << L.bar << def 0) dict
 --    --> 0
 ---}
 --def : sub -> Relation sub reachable sub -> Relation (Maybe sub) reachable sub
@@ -416,7 +431,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 
     import Dict exposing (Dict)
     import Accessors exposing (..)
-    import Test.Accessors.Record as R
+    import Lens as L
 
     dict : Dict String {bar : Int}
     dict = Dict.fromList [("foo", {bar = 2})]
@@ -427,13 +442,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (key "baz") dict
     --> Nothing
 
-    get (key "foo" << try << R.bar) dict
+    get (key "foo" << try << L.bar) dict
     --> Just 2
 
     set (key "foo") Nothing dict
     --> Dict.remove "foo" dict
 
-    set (key "baz" << try << R.bar) 3 dict
+    set (key "baz" << try << L.bar) 3 dict
     --> dict
 
 -}
@@ -442,12 +457,18 @@ key k =
     makeOneToOne_ "{}" (Dict.get k) (Dict.update k)
 
 
+
+-- keyed : Relation attribute built transformed -> Relation (Dict comparable v) built transformed
+-- keyed =
+--     makeOneToN_ "{_}" (\fn -> Dict.map (Tuple.pair >> fn)) (\fn -> Dict.map (Tuple.pair >> fn))
+
+
 {-| This accessor combinator lets you access Dict members.
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
     import Accessors exposing (..)
-    import Test.Accessors.Record as R
+    import Lens as L
 
     list : List { bar : String }
     list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
@@ -458,13 +479,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (at 9000) list
     --> Nothing
 
-    get (at 0 << R.bar) list
+    get (at 0 << L.bar) list
     --> Just "Stuff"
 
-    set (at 0 << R.bar) "Whatever" list
+    set (at 0 << L.bar) "Whatever" list
     --> [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
 
-    set (at 9000 << R.bar) "Whatever" list
+    set (at 9000 << L.bar) "Whatever" list
     --> list
 
 -}
@@ -500,7 +521,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 
     import Array exposing (Array)
     import Accessors exposing (..)
-    import Test.Accessors.Record as R
+    import Lens as L
 
     arr : Array { bar : String }
     arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
@@ -511,13 +532,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (ix 9000) arr
     --> Nothing
 
-    get (ix 0 << R.bar) arr
+    get (ix 0 << L.bar) arr
     --> Just "Stuff"
 
-    set (ix 0 << R.bar) "Whatever" arr
+    set (ix 0 << L.bar) "Whatever" arr
     --> Array.fromList [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
 
-    set (ix 9000 << R.bar) "Whatever" arr
+    set (ix 9000 << L.bar) "Whatever" arr
     --> arr
 
 -}

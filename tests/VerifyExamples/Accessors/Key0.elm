@@ -7,7 +7,7 @@ import Test
 import Expect
 
 import Accessors exposing (..)
-import Test.Accessors.Record as R
+import Lens as L
 import Accessors exposing (..)
 import Dict exposing (Dict)
 
@@ -20,11 +20,11 @@ dict = Dict.fromList [("foo", {bar = 2})]
 
 spec0 : Test.Test
 spec0 =
-    Test.test "#key: \n\n    set (key \"baz\" << try << R.bar) 3 dict\n    --> dict" <|
+    Test.test "#key: \n\n    set (key \"baz\" << try << L.bar) 3 dict\n    --> dict" <|
         \() ->
             Expect.equal
                 (
-                set (key "baz" << try << R.bar) 3 dict
+                set (key "baz" << try << L.bar) 3 dict
                 )
                 (
                 dict

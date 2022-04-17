@@ -7,7 +7,7 @@ import Test
 import Expect
 
 import Accessors exposing (..)
-import Test.Accessors.Record as R
+import Lens as L
 import Accessors exposing (..)
 
 
@@ -19,11 +19,11 @@ list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
 
 spec1 : Test.Test
 spec1 =
-    Test.test "#at: \n\n    set (at 0 << R.bar) \"Whatever\" list\n    --> [{ bar = \"Whatever\" }, { bar =  \"Things\" }, { bar = \"Woot\" }]" <|
+    Test.test "#at: \n\n    set (at 0 << L.bar) \"Whatever\" list\n    --> [{ bar = \"Whatever\" }, { bar =  \"Things\" }, { bar = \"Woot\" }]" <|
         \() ->
             Expect.equal
                 (
-                set (at 0 << R.bar) "Whatever" list
+                set (at 0 << L.bar) "Whatever" list
                 )
                 (
                 [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]

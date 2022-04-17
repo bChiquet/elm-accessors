@@ -1,6 +1,6 @@
-module Test.Accessors.Record exposing (age, bar, email, foo, info, name, qux, stuff, things)
+module Lens exposing (..)
 
-import Accessors exposing (Lens, Relation, makeOneToOne_)
+import Accessors exposing (Lens, makeOneToOne_)
 
 
 bar : Lens { record | bar : attribute } transformed attribute built

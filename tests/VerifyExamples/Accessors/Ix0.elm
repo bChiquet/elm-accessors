@@ -7,7 +7,7 @@ import Test
 import Expect
 
 import Accessors exposing (..)
-import Test.Accessors.Record as R
+import Lens as L
 import Accessors exposing (..)
 import Array exposing (Array)
 
@@ -20,11 +20,11 @@ arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
 
 spec0 : Test.Test
 spec0 =
-    Test.test "#ix: \n\n    set (ix 9000 << R.bar) \"Whatever\" arr\n    --> arr" <|
+    Test.test "#ix: \n\n    set (ix 9000 << L.bar) \"Whatever\" arr\n    --> arr" <|
         \() ->
             Expect.equal
                 (
-                set (ix 9000 << R.bar) "Whatever" arr
+                set (ix 9000 << L.bar) "Whatever" arr
                 )
                 (
                 arr

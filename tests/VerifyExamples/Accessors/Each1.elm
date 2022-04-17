@@ -7,7 +7,7 @@ import Test
 import Expect
 
 import Accessors exposing (..)
-import Test.Accessors.Record as R
+import Lens as L
 import Accessors exposing (..)
 
 
@@ -23,11 +23,11 @@ listRecord = { foo = [ {bar = 2}
 
 spec1 : Test.Test
 spec1 =
-    Test.test "#each: \n\n    get (R.foo << each << R.bar) listRecord\n    --> [2, 3, 4]" <|
+    Test.test "#each: \n\n    get (L.foo << each << L.bar) listRecord\n    --> [2, 3, 4]" <|
         \() ->
             Expect.equal
                 (
-                get (R.foo << each << R.bar) listRecord
+                get (L.foo << each << L.bar) listRecord
                 )
                 (
                 [2, 3, 4]

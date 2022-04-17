@@ -7,7 +7,7 @@ import Test
 import Expect
 
 import Accessors exposing (..)
-import Test.Accessors.Record as R
+import Lens as L
 import Accessors exposing (..)
 
 
@@ -21,11 +21,11 @@ maybeRecord = { foo = Just { bar = 2 }
 
 spec1 : Test.Test
 spec1 =
-    Test.test "#try: \n\n    over (R.foo << try << R.bar) ((+) 1) maybeRecord\n    --> {foo = Just {bar = 3}, qux = Nothing}" <|
+    Test.test "#try: \n\n    over (L.foo << try << L.bar) ((+) 1) maybeRecord\n    --> {foo = Just {bar = 3}, qux = Nothing}" <|
         \() ->
             Expect.equal
                 (
-                over (R.foo << try << R.bar) ((+) 1) maybeRecord
+                over (L.foo << try << L.bar) ((+) 1) maybeRecord
                 )
                 (
                 {foo = Just {bar = 3}, qux = Nothing}
