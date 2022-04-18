@@ -1,6 +1,6 @@
 module Laws exposing (..)
 
-import Accessors as A exposing (Accessor, Lens_, Relation, Setable)
+import Accessors as A exposing (Lens_, Setable)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Expect exposing (Expectation)

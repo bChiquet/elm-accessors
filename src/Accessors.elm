@@ -221,7 +221,7 @@ over (foo << qux) ((+) 1) myRecord
 
 -}
 over :
-    (Relation attribute attribute y -> Relation structure attribute transformed)
+    (Relation attribute attribute built -> Relation structure attribute transformed)
     -> (attribute -> attribute)
     -> structure
     -> structure
@@ -379,7 +379,7 @@ eachIdx =
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-every : Relation super sub wrap -> Relation (Array super) sub (Array wrap)
+every : Relation attribute built transformed -> Relation (Array attribute) built (Array transformed)
 every =
     makeOneToN_ "[]" Array.map Array.map
 
@@ -407,7 +407,7 @@ every =
     --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
-try : Relation sub path wrap -> Relation (Maybe sub) path (Maybe wrap)
+try : Relation attribute built transformed -> Relation (Maybe attribute) built (Maybe transformed)
 try =
     makeOneToN_ "?" Maybe.map Maybe.map
 
