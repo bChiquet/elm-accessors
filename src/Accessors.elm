@@ -187,9 +187,7 @@ set (foo << bar) "Hi!" myRecord
 
 -}
 set :
-    (Relation attribute attribute built
-     -> Relation structure attribute transformed
-    )
+    Setable structure transformed attribute built
     -> attribute
     -> structure
     -> structure
