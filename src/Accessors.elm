@@ -1,16 +1,13 @@
 module Accessors exposing
     ( Relation, Accessor, Lens, Lens_, Setable
     , get, set, over, name
-    , try
-    , key
-    , each, at, eachIdx
-    , every, ix
+    , try, def, or
+    , values, keyed, key
+    , each, eachIdx, at
+    , every, everyIdx, ix
     , one, two
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
-    --, def
-    --, Modifiable
-    --, Getable
     )
 
 {-| Relations are interfaces to document the relation between two data
@@ -26,7 +23,7 @@ structures without handling the packing and the unpacking.
 
 # Relation
 
-@docs Relation, Accessor, Lens, Lens_, Getable, Setable, Modifiable
+@docs Relation, Accessor, Lens, Lens_, Setable
 
 
 # Action functions
@@ -39,10 +36,10 @@ specific action on data using that accessor.
 
 # Common accessors
 
-@docs try, def
-@docs key
-@docs each, at, eachIdx
-@docs every, ix
+@docs try, def, or
+@docs values, keyed, key
+@docs each, eachIdx, at
+@docs every, everyIdx, ix
 @docs one, two
 
 
@@ -61,8 +58,8 @@ import Dict exposing (Dict)
 
 {-| The most general version of this type that everything else specializes
 -}
-type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable wrap =
-    Relation attrBefore wrap attrAfter -> Relation dataBefore reachable dataAfter
+type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable =
+    Relation attrBefore reachable attrAfter -> Relation dataBefore reachable dataAfter
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -85,9 +82,9 @@ to get/set/over deeply nested data.
 -}
 type alias
     Lens
-        -- Before Action
+        -- Structure Before Action
         structure
-        -- After Action
+        -- Structure After Action
         transformed
         -- Focus Before action
         attribute
@@ -169,7 +166,7 @@ void super =
 
 {-| This function gives the name of the function as a string...
 -}
-name : Accessor a b c d e f -> String
+name : Accessor a b c d e -> String
 name accessor =
     let
         (Relation relation) =
@@ -441,6 +438,53 @@ every =
     makeOneToN_ "[]" Array.map Array.map
 
 
+{-| This accessor lets you traverse a list including the index of each element
+
+    import Accessors exposing (..)
+    import Lens as L
+    import Array exposing (Array)
+
+    arrayRecord : { foo : Array { bar : Int } }
+    arrayRecord = { foo = [ {bar = 2}
+                          , {bar = 3}
+                          , {bar = 4}
+                          ] |> Array.fromList
+                  }
+
+    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne ( idx, ({ bar } as rec) ) =
+        if idx > 0 then
+            ( idx, { bar = bar * 10 } )
+        else
+            (idx, rec)
+
+
+    get (L.foo << everyIdx) arrayRecord
+    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})] |> Array.fromList
+
+    over (L.foo << everyIdx) multiplyIfGTOne arrayRecord
+    --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
+
+    get (L.foo << everyIdx << two << L.bar) arrayRecord
+    --> [2, 3, 4] |> Array.fromList
+
+    over (L.foo << everyIdx << two << L.bar) ((+) 1) arrayRecord
+    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
+
+-}
+everyIdx : Relation ( Int, attribute ) reachable built -> Relation (Array attribute) reachable (Array built)
+everyIdx =
+    makeOneToN_ "#[]"
+        (\fn ->
+            Array.indexedMap
+                (\idx -> Tuple.pair idx >> fn)
+        )
+        (\fn ->
+            Array.indexedMap
+                (\idx -> Tuple.pair idx >> fn >> Tuple.second)
+        )
+
+
 {-| This accessor combinator lets you access values inside Maybe.
 
     import Accessors exposing (..)
@@ -469,31 +513,144 @@ try =
     makeOneToN_ "?" Maybe.map Maybe.map
 
 
+{-| This accessor combinator lets you provide a default value for otherwise failable compositions
 
---{-| This accessor combinator lets you provide a default value for otherwise failable compositions
---  TODO: Doesn't do what is expected... :/
---    import Dict exposing (Dict)
---    import Lens as L
---    dict : Dict String {bar : Int}
---    dict =
---        Dict.fromList [("foo", {bar = 2})]
---    get (key "foo" << def {bar = 0}) dict
---    --> {bar = 2}
---    get (key "baz" << def {bar = 0}) dict
---    --> {bar = 0}
---    get (key "foo" << try << L.bar << def 0) dict
---    --> 2
---    get (key "baz" << try << L.bar << def 0) dict
---    --> 0
----}
---def : sub -> Relation sub reachable sub -> Relation (Maybe sub) reachable sub
---def d =
---    makeOneToN "??"
---        (\f -> over try f >> Maybe.withDefault d)
---        Maybe.map
+    import Dict exposing (Dict)
+    import Lens as L
+
+    dict : Dict String {bar : Int}
+    dict =
+        Dict.fromList [("foo", {bar = 2})]
+
+    get (key "foo" << def {bar = 0}) dict
+    --> {bar = 2}
+
+    get (key "baz" << def {bar = 0}) dict
+    --> {bar = 0}
+
+    -- NOTE: The following do not compile :thinking:
+    --get (key "foo" << try << L.bar << def 0) dict
+    ----> 2
+
+    --get (key "baz" << try << L.bar << def 0) dict
+    ----> 0
+
+-}
+def : attribute -> Relation attribute reachable wrap -> Relation (Maybe attribute) reachable wrap
+def d =
+    makeOneToN_ "??"
+        (\f -> Maybe.withDefault d >> f)
+        Maybe.map
 
 
-{-| This accessor combinator lets you access Dict members.
+{-| This accessor combinator lets you provide a default value for otherwise failable compositions
+
+    import Dict exposing (Dict)
+    import Lens as L
+
+    dict : Dict String {bar : Int}
+    dict =
+        Dict.fromList [("foo", {bar = 2})]
+
+    -- NOTE: Use `def` for this.
+    --get (key "foo" << or {bar = 0}) dict
+    ----> {bar = 2}
+
+    --get (key "baz" << or {bar = 0}) dict
+    ----> {bar = 0}
+
+    get ((key "foo" << try << L.bar) |> or 0) dict
+    --> 2
+
+    get ((key "baz" << try << L.bar) |> or 0) dict
+    --> 0
+
+-}
+or :
+    attribute
+    -> (Relation attribute attribute attribute -> Relation structure attribute (Maybe attribute))
+    -> (Relation attribute other attribute -> Relation structure other attribute)
+or d l =
+    makeOneToOne_ "||"
+        (get l >> Maybe.withDefault d)
+        (over l)
+
+
+{-| values: This accessor lets you traverse a Dict including the index of each element
+
+    import Accessors exposing (..)
+    import Lens as L
+    import Dict exposing (Dict)
+
+    dictRecord : {foo : Dict String {bar : Int}}
+    dictRecord = { foo = [ ("a", { bar = 2 })
+                         , ("b", { bar = 3 })
+                         , ("c", { bar = 4 })
+                         ] |> Dict.fromList
+                 }
+
+    get (L.foo << values) dictRecord
+    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList
+
+    over (L.foo << values << L.bar) ((*) 10) dictRecord
+    --> {foo = [("a", {bar = 20}), ("b", {bar = 30}), ("c", {bar = 40})] |> Dict.fromList}
+
+    get (L.foo << values << L.bar) dictRecord
+    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+
+    over (L.foo << values << L.bar) ((+) 1) dictRecord
+    --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
+
+-}
+values : Relation attribute reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+values =
+    makeOneToN_ "{_}"
+        (\fn -> Dict.map (\_ -> fn))
+        (\fn -> Dict.map (\_ -> fn))
+
+
+{-| keyed: This accessor lets you traverse a Dict including the index of each element
+
+    import Accessors exposing (..)
+    import Lens as L
+    import Dict exposing (Dict)
+
+    dictRecord : {foo : Dict String {bar : Int}}
+    dictRecord = { foo = [ ("a", { bar = 2 })
+                         , ("b", { bar = 3 })
+                         , ("c", { bar = 4 })
+                         ] |> Dict.fromList
+                 }
+
+    multiplyIfA : (String, { bar : Int }) -> (String, { bar : Int })
+    multiplyIfA ( key, ({ bar } as rec) ) =
+        if key == "a" then
+            ( key, { bar = bar * 10 } )
+        else
+            (key, rec)
+
+
+    get (L.foo << keyed) dictRecord
+    --> [("a", ("a", {bar = 2})), ("b", ("b", {bar = 3})), ("c", ("c", {bar = 4}))] |> Dict.fromList
+
+    over (L.foo << keyed) multiplyIfA dictRecord
+    --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
+
+    get (L.foo << keyed << two << L.bar) dictRecord
+    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+
+    over (L.foo << keyed << two << L.bar) ((+) 1) dictRecord
+    --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
+
+-}
+keyed : Relation ( comparable, attribute ) reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+keyed =
+    makeOneToN_ "{_}"
+        (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn))
+        (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn >> Tuple.second))
+
+
+{-| key: NON-structure preserving accessor over Dict's
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -520,20 +677,12 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-key : comparable -> Relation (Maybe v) reachable wrap -> Relation (Dict comparable v) reachable wrap
+key : comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
 key k =
     makeOneToOne_ "{}" (Dict.get k) (Dict.update k)
 
 
-
--- keyed : Relation attribute built transformed -> Relation (Dict comparable v) built transformed
--- keyed =
---     makeOneToN_ "{_}" (\fn -> Dict.map (Tuple.pair >> fn)) (\fn -> Dict.map (Tuple.pair >> fn))
-
-
-{-| This accessor combinator lets you access Dict members.
-
-In terms of accessors, think of Dicts as records where each field is a Maybe.
+{-| at: Structure Preserving accessor over List members.
 
     import Accessors exposing (..)
     import Lens as L
