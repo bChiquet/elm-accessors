@@ -62,8 +62,7 @@ import Dict exposing (Dict)
 {-| The most general version of this type that everything else specializes
 -}
 type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable wrap =
-    Relation attrBefore wrap attrAfter
-    -> Relation dataBefore reachable dataAfter
+    Relation attrBefore wrap attrAfter -> Relation dataBefore reachable dataAfter
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -124,10 +123,10 @@ Implementation: A relation is a banal record storing a `get` function and an
 `over` function.
 
 -}
-type Relation super sub wrap
+type Relation structure attribute wrap
     = Relation
-        { get : super -> wrap
-        , over : (sub -> sub) -> (super -> super)
+        { get : structure -> wrap
+        , over : (attribute -> attribute) -> (structure -> structure)
         , name : String
         }
 
@@ -152,7 +151,13 @@ get :
 get accessor s =
     let
         (Relation relation) =
-            accessor (Relation { get = \super -> super, over = void, name = "" })
+            accessor
+                (Relation
+                    { get = \super -> super
+                    , over = void
+                    , name = ""
+                    }
+                )
     in
     relation.get s
 
@@ -168,7 +173,13 @@ name : Accessor a b c d e f -> String
 name accessor =
     let
         (Relation relation) =
-            accessor (Relation { get = void, over = void, name = "" })
+            accessor
+                (Relation
+                    { get = void
+                    , over = void
+                    , name = ""
+                    }
+                )
     in
     relation.name
 
@@ -194,7 +205,13 @@ set :
 set accessor value s =
     let
         (Relation relation) =
-            accessor (Relation { get = void, over = \fn -> fn, name = "" })
+            accessor
+                (Relation
+                    { get = void
+                    , over = \fn -> fn
+                    , name = ""
+                    }
+                )
 
         newSuper =
             relation.over (\_ -> value) s
@@ -228,7 +245,13 @@ over :
 over accessor change s =
     let
         (Relation relation) =
-            accessor (Relation { get = void, over = \fn -> fn, name = "" })
+            accessor
+                (Relation
+                    { get = void
+                    , over = \fn -> fn
+                    , name = ""
+                    }
+                )
     in
     relation.over change s
 
@@ -244,10 +267,9 @@ a 1:1 relation with what they contain, such as a record and one of its fields:
 
 -}
 makeOneToOne :
-    (super -> sub)
-    -> ((sub -> sub) -> super -> super)
-    -> Relation sub reachable wrap
-    -> Relation super reachable wrap
+    (structure -> attribute)
+    -> ((attribute -> attribute) -> structure -> structure)
+    -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
 makeOneToOne =
     makeOneToOne_ ""
 
@@ -268,7 +290,7 @@ makeOneToOne_ :
     String
     -> (structure -> attribute)
     -> ((attribute -> attribute) -> structure -> structure)
-    -> Lens structure transformed attribute built
+    -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
 makeOneToOne_ n getter mapper (Relation sub) =
     Relation
         { get = \super -> sub.get (getter super)
@@ -349,15 +371,50 @@ each =
     makeOneToN_ ":[]" List.map List.map
 
 
-eachIdx : Relation ( Int, attribute ) reachable ( Int, built ) -> Relation (List attribute) reachable (List built)
+{-| This accessor lets you traverse a list including the index of each element
+
+    import Accessors exposing (..)
+    import Lens as L
+
+    listRecord : {foo : List {bar : Int}}
+    listRecord = { foo = [ {bar = 2}
+                         , {bar = 3}
+                         , {bar = 4}
+                         ]
+                 }
+
+    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne ( idx, ({ bar } as rec) ) =
+        if idx > 0 then
+            ( idx, { bar = bar * 10 } )
+        else
+            (idx, rec)
+
+
+    get (L.foo << eachIdx) listRecord
+    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
+
+    over (L.foo << eachIdx) multiplyIfGTOne listRecord
+    --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
+
+    get (L.foo << eachIdx << two << L.bar) listRecord
+    --> [2, 3, 4]
+
+    over (L.foo << eachIdx << two << L.bar) ((+) 1) listRecord
+    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
+
+-}
+eachIdx : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
 eachIdx =
-    let
-        -- asdf : (( Int, attribute ) -> ( Int, built )) -> List attribute -> List built
-        asdf fn =
+    makeOneToN_ "#[]"
+        (\fn ->
+            List.indexedMap
+                (\idx -> Tuple.pair idx >> fn)
+        )
+        (\fn ->
             List.indexedMap
                 (\idx -> Tuple.pair idx >> fn >> Tuple.second)
-    in
-    makeOneToN_ "#[]" asdf asdf
+        )
 
 
 {-| This accessor combinator lets you access values inside Array.

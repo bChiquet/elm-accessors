@@ -32,6 +32,9 @@ suite =
         [ isLens L.name personFuzzer strFun string
         , isLens L.age personFuzzer intFun int
         , isSetable (L.email << A.try) personFuzzer strFun string
+
+        -- TODO: How to express laws for "Prism"-ish things elm-monocle calls this Optional.
+        -- , isOptional (L.email << A.try)
         , isSetable (L.stuff << A.at 0) personFuzzer strFun string
         , isSetable (L.stuff << A.each) personFuzzer strFun string
         , isSetable (L.things << A.ix 0) personFuzzer strFun string
