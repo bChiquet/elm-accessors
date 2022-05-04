@@ -30,11 +30,11 @@ dictRecord = { foo = [ ("a", { bar = 2 })
 
 spec0 : Test.Test
 spec0 =
-    Test.test "#keyed: \n\n    over (L.foo << keyed << two << L.bar) ((+) 1) dictRecord\n    --> {foo = [(\"a\", {bar = 3}), (\"b\", {bar = 4}), (\"c\", {bar = 5})] |> Dict.fromList}" <|
+    Test.test "#keyed: \n\n    over (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord\n    --> {foo = [(\"a\", {bar = 3}), (\"b\", {bar = 4}), (\"c\", {bar = 5})] |> Dict.fromList}" <|
         \() ->
             Expect.equal
                 (
-                over (L.foo << keyed << two << L.bar) ((+) 1) dictRecord
+                over (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord
                 )
                 (
                 {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}

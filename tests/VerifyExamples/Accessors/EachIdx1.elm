@@ -29,11 +29,11 @@ listRecord = { foo = [ {bar = 2}
 
 spec1 : Test.Test
 spec1 =
-    Test.test "#eachIdx: \n\n    get (L.foo << eachIdx << two << L.bar) listRecord\n    --> [2, 3, 4]" <|
+    Test.test "#eachIdx: \n\n    get (L.foo << eachIdx << snd << L.bar) listRecord\n    --> [2, 3, 4]" <|
         \() ->
             Expect.equal
                 (
-                get (L.foo << eachIdx << two << L.bar) listRecord
+                get (L.foo << eachIdx << snd << L.bar) listRecord
                 )
                 (
                 [2, 3, 4]

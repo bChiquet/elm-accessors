@@ -30,11 +30,11 @@ arrayRecord = { foo = [ {bar = 2}
 
 spec1 : Test.Test
 spec1 =
-    Test.test "#everyIdx: \n\n    get (L.foo << everyIdx << two << L.bar) arrayRecord\n    --> [2, 3, 4] |> Array.fromList" <|
+    Test.test "#everyIdx: \n\n    get (L.foo << everyIdx << snd << L.bar) arrayRecord\n    --> [2, 3, 4] |> Array.fromList" <|
         \() ->
             Expect.equal
                 (
-                get (L.foo << everyIdx << two << L.bar) arrayRecord
+                get (L.foo << everyIdx << snd << L.bar) arrayRecord
                 )
                 (
                 [2, 3, 4] |> Array.fromList

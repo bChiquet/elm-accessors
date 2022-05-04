@@ -5,7 +5,7 @@ module Accessors exposing
     , values, keyed, key
     , each, eachIdx, at
     , every, everyIdx, ix
-    , one, two
+    , fst, snd
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
     )
@@ -40,7 +40,7 @@ specific action on data using that accessor.
 @docs values, keyed, key
 @docs each, eachIdx, at
 @docs every, everyIdx, ix
-@docs one, two
+@docs fst, snd
 
 
 # Build your own accessors
@@ -394,10 +394,10 @@ each =
     over (L.foo << eachIdx) multiplyIfGTOne listRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
 
-    get (L.foo << eachIdx << two << L.bar) listRecord
+    get (L.foo << eachIdx << snd << L.bar) listRecord
     --> [2, 3, 4]
 
-    over (L.foo << eachIdx << two << L.bar) ((+) 1) listRecord
+    over (L.foo << eachIdx << snd << L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -465,10 +465,10 @@ every =
     over (L.foo << everyIdx) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
-    get (L.foo << everyIdx << two << L.bar) arrayRecord
+    get (L.foo << everyIdx << snd << L.bar) arrayRecord
     --> [2, 3, 4] |> Array.fromList
 
-    over (L.foo << everyIdx << two << L.bar) ((+) 1) arrayRecord
+    over (L.foo << everyIdx << snd << L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
@@ -636,10 +636,10 @@ values =
     over (L.foo << keyed) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
-    get (L.foo << keyed << two << L.bar) dictRecord
+    get (L.foo << keyed << snd << L.bar) dictRecord
     --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
 
-    over (L.foo << keyed << two << L.bar) ((+) 1) dictRecord
+    over (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
@@ -797,18 +797,18 @@ ix idx =
     charging : (String, Int)
     charging = ("It's over", 1)
 
-    get one charging
+    get fst charging
     --> "It's over"
 
-    set one "It's over" charging
+    set fst "It's over" charging
     --> ("It's over", 1)
 
-    over one (\s -> String.toUpper s ++ "!!!") charging
+    over fst (\s -> String.toUpper s ++ "!!!") charging
     --> ("IT'S OVER!!!", 1)
 
 -}
-one : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
-one =
+fst : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
+fst =
     makeOneToOne_ "_1" Tuple.first Tuple.mapFirst
 
 
@@ -819,19 +819,19 @@ one =
     meh : (String, Int)
     meh = ("It's over", 1)
 
-    get two meh
+    get snd meh
     --> 1
 
-    set two 1125 meh
+    set snd 1125 meh
     --> ("It's over", 1125)
 
     meh
-        |> set two 1125
-        |> over one (\s -> String.toUpper s ++ "!!!")
-        |> over two ((*) 8)
+        |> set snd 1125
+        |> over fst (\s -> String.toUpper s ++ "!!!")
+        |> over snd ((*) 8)
     --> ("IT'S OVER!!!", 9000)
 
 -}
-two : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
-two =
+snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
+snd =
     makeOneToOne_ "_2" Tuple.second Tuple.mapSecond
