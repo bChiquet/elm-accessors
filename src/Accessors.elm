@@ -740,7 +740,7 @@ at idx =
         << try
 
 
-{-| This accessor combinator lets you access Dict members.
+{-| This accessor combinator lets you access Array indices.
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
