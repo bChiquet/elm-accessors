@@ -1,6 +1,6 @@
 module Accessors exposing
     ( Relation, Accessor, Lens, Lens_, Setable
-    , get, set, over, name
+    , get, set, over, name, is
     , try, def, or
     , values, keyed, key
     , each, eachIdx, at
@@ -8,7 +8,6 @@ module Accessors exposing
     , fst, snd
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
-    , Watami, is
     )
 
 {-| Relations are interfaces to document the relation between two data
@@ -32,7 +31,7 @@ structures without handling the packing and the unpacking.
 Action functions are functions that take an accessor and let you perform a
 specific action on data using that accessor.
 
-@docs get, set, over, name
+@docs get, set, over, name, is
 
 
 # Common accessors
@@ -96,6 +95,8 @@ type alias
     -> Relation structure built transformed
 
 
+{-| Simplified version of Lens but seems to break type inference for more complicated compositions.
+-}
 type alias Lens_ structure attribute =
     Lens structure attribute attribute attribute
 
@@ -106,13 +107,16 @@ type alias Lens_ structure attribute =
 --     -> Relation structure reachable transformed
 
 
+{-| Type of a composition of accessors that `set` can be called with.
+-}
 type alias Setable structure transformed attribute built =
     Relation attribute attribute built -> Relation structure attribute transformed
 
 
-type alias Watami structure transformed attribute built =
-    Relation attribute (Maybe built) transformed
-    -> Relation structure (Maybe built) (Maybe transformed)
+
+-- type alias Watami structure transformed attribute built =
+--     Relation attribute (Maybe built) transformed
+--     -> Relation structure (Maybe built) (Maybe transformed)
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
