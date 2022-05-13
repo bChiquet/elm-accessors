@@ -8,6 +8,7 @@ module Accessors exposing
     , fst, snd
     , makeOneToOne, makeOneToN
     , makeOneToOne_, makeOneToN_
+    , Watami, is
     )
 
 {-| Relations are interfaces to document the relation between two data
@@ -109,6 +110,11 @@ type alias Setable structure transformed attribute built =
     Relation attribute attribute built -> Relation structure attribute transformed
 
 
+type alias Watami structure transformed attribute built =
+    Relation attribute (Maybe built) transformed
+    -> Relation structure (Maybe built) (Maybe transformed)
+
+
 {-| A `Relation super sub wrap` is a type describing how to interact with a
 `sub` data when given a `super` data.
 
@@ -140,9 +146,7 @@ get (foo << bar) myRecord
 
 -}
 get :
-    (Relation attribute built attribute
-     -> Relation structure reachable transformed
-    )
+    (Relation attribute built attribute -> Relation structure reachable transformed)
     -> structure
     -> transformed
 get accessor s =
@@ -835,3 +839,30 @@ fst =
 snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
 snd =
     makeOneToOne_ "_2" Tuple.second Tuple.mapSecond
+
+
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    Just 1234
+        |> is try
+    --> True
+
+    Just 1234
+        |> is try
+    --> False
+
+    ["Stuff", "things"]
+        |> is (ix 2)
+    --> False
+
+    ["Stuff", "things"]
+        |> is (ix 0)
+    --> True
+
+-}
+is :
+    (Relation attribute built attribute -> Relation structure reachable (Maybe transformed))
+    -> structure
+    -> Bool
+is prism sup =
+    get prism sup /= Nothing
