@@ -584,7 +584,7 @@ or d l =
         (over l)
 
 
-{-| This accessor combinator lets you access values inside Maybe.
+{-| This accessor lets you access values inside the Ok variant of a Result.
 
     import Accessors exposing (..)
     import Lens as L
@@ -612,7 +612,7 @@ ok =
     makeOneToN_ "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
 
 
-{-| This accessor combinator lets you access values inside Maybe.
+{-| This accessor lets you access values inside the Err variant of a Result.
 
     import Accessors exposing (..)
     import Lens as L
