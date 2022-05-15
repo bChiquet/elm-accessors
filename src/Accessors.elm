@@ -1,7 +1,7 @@
 module Accessors exposing
     ( Relation, Accessor, Lens, Lens_, Setable
     , get, set, over, name, is
-    , try, def, or
+    , try, def, or, ok, err
     , values, keyed, key
     , each, eachIdx, at
     , every, everyIdx, ix
@@ -36,7 +36,7 @@ specific action on data using that accessor.
 
 # Common accessors
 
-@docs try, def, or
+@docs try, def, or, ok, err
 @docs values, keyed, key
 @docs each, eachIdx, at
 @docs every, everyIdx, ix
@@ -584,6 +584,71 @@ or d l =
         (over l)
 
 
+{-| This accessor combinator lets you access values inside Maybe.
+
+    import Accessors exposing (..)
+    import Lens as L
+
+    maybeRecord : { foo : Result String { bar : Int }, qux : Result String { bar : Int } }
+    maybeRecord = { foo = Ok { bar = 2 }
+                  , qux = Err "Not an Int"
+                  }
+
+    get (L.foo << ok << L.bar) maybeRecord
+    --> Just 2
+
+    get (L.qux << ok << L.bar) maybeRecord
+    --> Nothing
+
+    over (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
+
+    over (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
+
+-}
+ok : Relation attribute built transformed -> Relation (Result x attribute) built (Maybe transformed)
+ok =
+    makeOneToN_ "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
+
+
+{-| This accessor combinator lets you access values inside Maybe.
+
+    import Accessors exposing (..)
+    import Lens as L
+
+    maybeRecord : { foo : Result String { bar : Int }, qux : Result String { bar : Int } }
+    maybeRecord = { foo = Ok { bar = 2 }
+                  , qux = Err "Not an Int"
+                  }
+
+    get (L.foo << err) maybeRecord
+    --> Nothing
+
+    get (L.qux << err) maybeRecord
+    --> Just "Not an Int"
+
+    over (L.foo << err) String.toUpper maybeRecord
+    --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
+
+    over (L.qux << err) String.toUpper maybeRecord
+    --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
+
+-}
+err : Relation attribute built transformed -> Relation (Result attribute x) built (Maybe transformed)
+err =
+    let
+        getter fn res =
+            case res of
+                Err e ->
+                    Just (fn e)
+
+                _ ->
+                    Nothing
+    in
+    makeOneToN_ "?" getter Result.mapError
+
+
 {-| values: This accessor lets you traverse a Dict including the index of each element
 
     import Accessors exposing (..)
@@ -851,16 +916,16 @@ snd =
         |> is try
     --> True
 
-    Just 1234
+    Nothing
         |> is try
     --> False
 
     ["Stuff", "things"]
-        |> is (ix 2)
+        |> is (at 2)
     --> False
 
     ["Stuff", "things"]
-        |> is (ix 0)
+        |> is (at 0)
     --> True
 
 -}
