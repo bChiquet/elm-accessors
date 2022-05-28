@@ -750,9 +750,9 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-key : comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
+key : String -> Relation (Maybe attribute) reachable wrap -> Relation (Dict String attribute) reachable wrap
 key k =
-    makeOneToOne_ "{}" (Dict.get k) (Dict.update k)
+    makeOneToOne_ ("{" ++ k ++ "}") (Dict.get k) (Dict.update k)
 
 
 {-| at: Structure Preserving accessor over List members.

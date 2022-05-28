@@ -27,5 +27,5 @@ try =
 {-| Re-Exported from Accessors for backwards compatibility
 -}
 dictEntry : comparable -> Relation (Maybe v) reachable wrap -> Relation (Dict comparable v) reachable wrap
-dictEntry =
-    A.key
+dictEntry k =
+    A.makeOneToOne (Dict.get k) (Dict.update k)
