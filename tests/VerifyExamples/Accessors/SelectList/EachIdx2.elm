@@ -29,12 +29,12 @@ listRecord =
 
 spec2 : Test.Test
 spec2 =
-    Test.test "#eachIdx: \n\n    over (L.foo << SL.eachIdx) multiplyIfGTOne listRecord\n    --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 30 }, { bar = 40 }] }" <|
+    Test.test "#eachIdx: \n\n    over (L.foo << SL.eachIdx) multiplyIfGTOne listRecord\n    --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }" <|
         \() ->
             Expect.equal
                 (
                 over (L.foo << SL.eachIdx) multiplyIfGTOne listRecord
                 )
                 (
-                { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 30 }, { bar = 40 }] }
+                { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
                 )

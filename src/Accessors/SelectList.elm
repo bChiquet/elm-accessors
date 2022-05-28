@@ -55,7 +55,7 @@ each =
     --> SelectList.fromLists [(0, {bar = 1})] (1, {bar = 2}) [(2, {bar = 3}), (3, {bar = 4})]
 
     over (L.foo << SL.eachIdx) multiplyIfGTOne listRecord
-    --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 30 }, { bar = 40 }] }
+    --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
 
     get (L.foo << SL.eachIdx << snd << L.bar) listRecord
     --> SelectList.fromLists [1] 2 [3, 4]
