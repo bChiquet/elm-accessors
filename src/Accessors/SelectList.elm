@@ -1,6 +1,9 @@
 module Accessors.SelectList exposing (each, eachIdx, selected)
 
 {-| This module exposes some helpers for "miyamoen/select-list"
+
+@docs each, eachIdx, selected
+
 -}
 
 import Accessors exposing (..)
