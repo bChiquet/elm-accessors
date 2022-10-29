@@ -31,7 +31,7 @@ import SelectList exposing (SelectList)
 -}
 each : Relation attribute built transformed -> Relation (SelectList attribute) built (SelectList transformed)
 each =
-    Base.makeOneToN_ ":[_]" SelectList.map SelectList.map
+    Base.makeOneToN ":[_]" SelectList.map SelectList.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -69,7 +69,7 @@ each =
 -}
 each_ : Relation ( Int, attribute ) reachable built -> Relation (SelectList attribute) reachable (SelectList built)
 each_ =
-    Base.makeOneToN_ "[#]"
+    Base.makeOneToN "[#]"
         (\fn ls ->
             let
                 ( before, current, after ) =
@@ -129,4 +129,4 @@ each_ =
 -}
 selected : Relation attribute reachable built -> Relation (SelectList attribute) reachable built
 selected =
-    Base.makeOneToOne_ "[^]" SelectList.selected SelectList.updateSelected
+    Base.makeOneToOne "[^]" SelectList.selected SelectList.updateSelected

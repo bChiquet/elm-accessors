@@ -39,7 +39,7 @@ import Maybe.Accessors as Maybe
 -}
 each : Relation attribute reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
 each =
-    Base.makeOneToN_ "{_}"
+    Base.makeOneToN "{_}"
         (\fn -> Dict.map (\_ -> fn))
         (\fn -> Dict.map (\_ -> fn))
 
@@ -80,7 +80,7 @@ each =
 -}
 each_ : Relation ( comparable, attribute ) reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
 each_ =
-    Base.makeOneToN_ "{_}"
+    Base.makeOneToN "{_}"
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn))
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn >> Tuple.second))
 
@@ -182,4 +182,4 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 at_ : (comparable -> String) -> comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
 at_ toS k =
-    Base.makeOneToOne_ ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)
+    Base.makeOneToOne ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)

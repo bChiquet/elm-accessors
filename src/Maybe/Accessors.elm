@@ -28,7 +28,7 @@ import Base exposing (Relation)
 -}
 try : Relation attribute built transformed -> Relation (Maybe attribute) built (Maybe transformed)
 try =
-    Base.makeOneToN_ "?" Maybe.map Maybe.map
+    Base.makeOneToN "?" Maybe.map Maybe.map
 
 
 {-| This accessor combinator lets you provide a default value for otherwise failable compositions
@@ -56,7 +56,7 @@ try =
 -}
 def : attribute -> Relation attribute reachable wrap -> Relation (Maybe attribute) reachable wrap
 def d =
-    Base.makeOneToN_ "??"
+    Base.makeOneToN "??"
         (\f -> Maybe.withDefault d >> f)
         Maybe.map
 
@@ -89,6 +89,6 @@ or :
     -> (Relation attribute attribute attribute -> Relation structure attribute (Maybe attribute))
     -> (Relation attribute other attribute -> Relation structure other attribute)
 or d l =
-    Base.makeOneToOne_ "||"
+    Base.makeOneToOne "||"
         (Base.get l >> Maybe.withDefault d)
         (Base.over l)

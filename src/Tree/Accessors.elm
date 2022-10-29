@@ -8,7 +8,7 @@ import TreePath exposing (TreePath)
 
 onLabel : Lens (Tree label) transformed label wrap
 onLabel =
-    Base.makeOneToOne_ "-label"
+    Base.makeOneToOne "-label"
         Tree.label
         Tree.mapLabel
 
@@ -17,7 +17,7 @@ each :
     Relation label reachable wrap
     -> Relation (Tree label) reachable (Tree wrap)
 each =
-    Base.makeOneToN_
+    Base.makeOneToN
         "<>"
         Tree.map
         Tree.map
@@ -25,7 +25,7 @@ each =
 
 onPath : TreePath -> Lens (Tree a) (Tree a) (Tree a) reachable
 onPath path =
-    Base.makeOneToN_
+    Base.makeOneToN
         ("<" ++ String.join ", " (List.map String.fromInt path) ++ ">")
         (Tree.updateAt path)
         (Tree.updateAt path)

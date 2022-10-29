@@ -1,7 +1,6 @@
 module Accessors exposing
     ( Relation, Accessor, Lens, Lens_, Setable
     , makeOneToOne, makeOneToN
-    , makeOneToOne_, makeOneToN_
     , get, set, over, name, is
     , try, def, or, ok, err
     , values, keyed, key, keyI, key_
@@ -31,7 +30,6 @@ structures without handling the packing and the unpacking.
 Accessors are built using these functions:
 
 @docs makeOneToOne, makeOneToN
-@docs makeOneToOne_, makeOneToN_
 
 
 # Action functions
@@ -137,18 +135,21 @@ type alias Relation structure attribute wrap =
 -- Constructors
 
 
-{-| This function lets you build an accessor for containers that have
-a 1:1 relation with what they contain, such as a record and one of its fields:
+{-| This exposes a description field that's necessary for use with the name function
+for getting unique names out of compositions of accessors. This is useful when you
+want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
     foo : Relation field sub wrap -> Relation { rec | foo : field } sub wrap
     foo =
         makeOneToOne
+            ".foo"
             .foo
             (\change rec -> { rec | foo = change rec.foo })
 
 -}
 makeOneToOne :
-    (structure -> attribute)
+    String
+    -> (structure -> attribute)
     -> ((attribute -> attribute) -> structure -> structure)
     -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
 makeOneToOne =
@@ -159,65 +160,22 @@ makeOneToOne =
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    foo : Relation field sub wrap -> Relation { rec | foo : field } sub wrap
-    foo =
-        makeOneToOne_
-            ".foo"
-            .foo
-            (\change rec -> { rec | foo = change rec.foo })
-
--}
-makeOneToOne_ :
-    String
-    -> (structure -> attribute)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
-makeOneToOne_ =
-    Base.makeOneToOne_
-
-
-{-| This function lets you build an accessor for containers that have
-a 1:N relation with what they contain, such as `List` (0-N cardinality) or
-`Maybe` (0-1). E.g.:
-
     each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
     each =
-        makeOneToN
+        makeOneToN "[]"
             List.map
             List.map
-
-n.b. implementing those is usually considerably simpler than the type suggests.
 
 -}
 makeOneToN :
-    ((attribute -> built) -> structure -> transformed)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -- What is reachable here? And this is obviously not Lens so?
-    -> (Relation attribute reachable built -> Relation structure reachable transformed)
-makeOneToN =
-    Base.makeOneToN
-
-
-{-| This exposes a description field that's necessary for use with the name function
-for getting unique names out of compositions of accessors. This is useful when you
-want type safe keys for a Dictionary but you still want to use elm/core implementation.
-
-    each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
-    each =
-        makeOneToN_ "[]"
-            List.map
-            List.map
-
--}
-makeOneToN_ :
     String
     -> ((attribute -> built) -> structure -> transformed)
     -> ((attribute -> attribute) -> structure -> structure)
     -- What is reachable here?
     -> Relation attribute reachable built
     -> Relation structure reachable transformed
-makeOneToN_ =
-    Base.makeOneToN_
+makeOneToN =
+    Base.makeOneToN
 
 
 

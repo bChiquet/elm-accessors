@@ -22,7 +22,7 @@ import Base exposing (Relation)
 -}
 fst : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
 fst =
-    Base.makeOneToOne_ "_1" Tuple.first Tuple.mapFirst
+    Base.makeOneToOne "_1" Tuple.first Tuple.mapFirst
 
 
 {-|
@@ -47,4 +47,4 @@ fst =
 -}
 snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
 snd =
-    Base.makeOneToOne_ "_2" Tuple.second Tuple.mapSecond
+    Base.makeOneToOne "_2" Tuple.second Tuple.mapSecond

@@ -28,7 +28,7 @@ import Base exposing (Relation)
 -}
 onOk : Relation attribute built transformed -> Relation (Result x attribute) built (Maybe transformed)
 onOk =
-    Base.makeOneToN_ "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
+    Base.makeOneToN "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
 
 
 {-| This accessor lets you access values inside the Err variant of a Result.
@@ -65,4 +65,4 @@ onErr =
                 _ ->
                     Nothing
     in
-    Base.makeOneToN_ "!" getter Result.mapError
+    Base.makeOneToN "!" getter Result.mapError

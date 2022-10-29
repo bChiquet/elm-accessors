@@ -31,7 +31,7 @@ import Maybe.Accessors as Maybe
 -}
 each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
 each =
-    Base.makeOneToN_ ":[]" List.map List.map
+    Base.makeOneToN ":[]" List.map List.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -69,7 +69,7 @@ each =
 -}
 each_ : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
 each_ =
-    Base.makeOneToN_ "#[]"
+    Base.makeOneToN "#[]"
         (\fn ->
             List.indexedMap
                 (\idx -> Tuple.pair idx >> fn)
@@ -106,7 +106,7 @@ each_ =
 -}
 at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
 at idx =
-    Base.makeOneToOne_ ("(" ++ String.fromInt idx ++ ")")
+    Base.makeOneToOne ("(" ++ String.fromInt idx ++ ")")
         (if idx < 0 then
             always Nothing
 
@@ -157,7 +157,7 @@ at idx =
 -}
 id : Int -> Relation { m | id : Int } reachable wrap -> Relation (List { m | id : Int }) reachable (Maybe wrap)
 id key =
-    Base.makeOneToOne_ ("(" ++ String.fromInt key ++ ")")
+    Base.makeOneToOne ("(" ++ String.fromInt key ++ ")")
         (if key < 0 then
             always Nothing
 
