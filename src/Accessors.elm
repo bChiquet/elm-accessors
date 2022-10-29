@@ -1,5 +1,6 @@
 module Accessors exposing
-    ( Relation, Accessor, Lens, Lens_, Setable
+    ( Relation
+    , Accessor, Lens, Lens_, Setable
     , makeOneToOne, makeOneToN
     , get, set, over, name, is
     , try, def, or, ok, err
@@ -9,30 +10,29 @@ module Accessors exposing
     , fst, snd
     )
 
-{-| Relations are interfaces to document the relation between two data
-structures. For convenience, we'll call the containing structure `super`, and
-the contained structure `sub`. What a `Relation` claims is that a `super` is
-referencing a `sub` in some way.
-
-Relations are the building blocks of accessors. An accessor is a function that
-expects a `Relation` and builds a new relation with it. Accessors are
-composable, which means you can build a chain of relations to manipulate nested
-structures without handling the packing and the unpacking.
+{-| Accessors are a way of operating on nested data in Elm that doesn't require gobs of boilerplate.
 
 
-# Relation
+## Relation: is the opaque underlying interface that enables the rest of the library to work.
 
-@docs Relation, Accessor, Lens, Lens_, Setable
+@docs Relation
 
 
-# Constructors
+## Type Aliases: are shorthands from the Optics nomenclature that make writing your
+
+own accessors more convenient and hopefully easier to understand.
+
+@docs Accessor, Lens, Lens_, Setable
+
+
+## Constructors
 
 Accessors are built using these functions:
 
 @docs makeOneToOne, makeOneToN
 
 
-# Action functions
+## Action functions
 
 Action functions are functions that take an accessor and let you perform a
 specific action on data using that accessor.
@@ -40,7 +40,7 @@ specific action on data using that accessor.
 @docs get, set, over, name, is
 
 
-# Common accessors
+## Common Optics to mitigate `import` noise. Not everything is re-exported.
 
 @docs try, def, or, ok, err
 @docs values, keyed, key, keyI, keyF, key_
@@ -63,6 +63,14 @@ import Tuple.Accessors as Tuple
 
 
 -- Relation
+
+
+type alias Relation structure attribute wrap =
+    Base.Relation structure attribute wrap
+
+
+
+-- Type Aliases
 
 
 {-| The most general version of this type that everything else specializes
@@ -125,13 +133,6 @@ type alias Setable structure transformed attribute built =
 -- type alias Watami structure transformed attribute built =
 --     Relation attribute (Maybe built) transformed
 --     -> Relation structure (Maybe built) (Maybe transformed)
-
-
-type alias Relation structure attribute wrap =
-    Base.Relation structure attribute wrap
-
-
-
 -- Constructors
 
 
