@@ -1,8 +1,7 @@
 module SpecLazy exposing (suite)
 
-import Accessors exposing (makeOneToN, makeOneToOne)
+import Accessors exposing (each, key, makeOneToN, makeOneToOne, try)
 import Accessors.Lazy exposing (get, over, set)
-import Accessors.Library exposing (dictEntry, onEach, try)
 import Dict exposing (Dict)
 import Expect
 import Lens as L
@@ -66,7 +65,7 @@ suite =
             , test "get in list" <|
                 \_ ->
                     Expect.equal
-                        (get (L.bar << onEach << L.foo) recordWithList)
+                        (get (L.bar << each << L.foo) recordWithList)
                         [ 3, 5 ]
             , test "get in Just" <|
                 \_ ->
@@ -82,27 +81,27 @@ suite =
                 [ test "get present" <|
                     \_ ->
                         Expect.equal
-                            (get (dictEntry "foo") dict)
+                            (get (key "foo") dict)
                             (Just 7)
                 , test "get absent" <|
                     \_ ->
                         Expect.equal
-                            (get (dictEntry "bar") dict)
+                            (get (key "bar") dict)
                             Nothing
                 , test "nested get present" <|
                     \_ ->
                         Expect.equal
-                            (get (L.bar << dictEntry "foo") recordWithDict)
+                            (get (L.bar << key "foo") recordWithDict)
                             (Just 7)
                 , test "nested get absent" <|
                     \_ ->
                         Expect.equal
-                            (get (L.bar << dictEntry "bar") recordWithDict)
+                            (get (L.bar << key "bar") recordWithDict)
                             Nothing
                 , test "get with try" <|
                     \_ ->
                         Expect.equal
-                            (get (dictEntry "foo" << try << L.bar) dictWithRecord)
+                            (get (key "foo" << try << L.bar) dictWithRecord)
                             (Just "Yop")
                 ]
             ]
@@ -129,10 +128,10 @@ suite =
                 \_ ->
                     let
                         updatedExample =
-                            set (L.bar << onEach << L.bar) "Why, hello" recordWithList
+                            set (L.bar << each << L.bar) "Why, hello" recordWithList
                     in
                     Expect.equal
-                        (get (L.bar << onEach << L.bar) updatedExample)
+                        (get (L.bar << each << L.bar) updatedExample)
                         [ "Why, hello", "Why, hello" ]
             , test "set in Just" <|
                 \_ ->
@@ -157,44 +156,44 @@ suite =
                     \_ ->
                         let
                             updatedDict =
-                                set (dictEntry "foo") (Just 9) dict
+                                set (key "foo") (Just 9) dict
                         in
-                        Expect.equal (get (dictEntry "foo") updatedDict) (Just 9)
+                        Expect.equal (get (key "foo") updatedDict) (Just 9)
                 , test "set currently absent to present" <|
                     \_ ->
                         let
                             updatedDict =
-                                set (dictEntry "bar") (Just 9) dict
+                                set (key "bar") (Just 9) dict
                         in
-                        Expect.equal (get (dictEntry "bar") updatedDict) (Just 9)
+                        Expect.equal (get (key "bar") updatedDict) (Just 9)
                 , test "set currently present to absent" <|
                     \_ ->
                         let
                             updatedDict =
-                                set (dictEntry "foo") Nothing dict
+                                set (key "foo") Nothing dict
                         in
-                        Expect.equal (get (dictEntry "foo") updatedDict) Nothing
+                        Expect.equal (get (key "foo") updatedDict) Nothing
                 , test "set currently absent to absent" <|
                     \_ ->
                         let
                             updatedDict =
-                                set (dictEntry "bar") Nothing dict
+                                set (key "bar") Nothing dict
                         in
-                        Expect.equal (get (dictEntry "bar") updatedDict) Nothing
+                        Expect.equal (get (key "bar") updatedDict) Nothing
                 , test "set with try present" <|
                     \_ ->
                         let
                             updatedDict =
-                                set (dictEntry "foo" << try << L.bar) "Sup" dictWithRecord
+                                set (key "foo" << try << L.bar) "Sup" dictWithRecord
                         in
-                        Expect.equal (get (dictEntry "foo" << try << L.bar) updatedDict) (Just "Sup")
+                        Expect.equal (get (key "foo" << try << L.bar) updatedDict) (Just "Sup")
                 , test "set with try absent" <|
                     \_ ->
                         let
                             updatedDict =
-                                set (dictEntry "bar" << try << L.bar) "Sup" dictWithRecord
+                                set (key "bar" << try << L.bar) "Sup" dictWithRecord
                         in
-                        Expect.equal (get (dictEntry "bar" << try << L.bar) updatedDict) Nothing
+                        Expect.equal (get (key "bar" << try << L.bar) updatedDict) Nothing
                 ]
             ]
         , describe "over"
@@ -220,10 +219,10 @@ suite =
                 \_ ->
                     let
                         updatedExample =
-                            over (L.bar << onEach << L.foo) (\n -> n - 2) recordWithList
+                            over (L.bar << each << L.foo) (\n -> n - 2) recordWithList
                     in
                     Expect.equal
-                        (get (L.bar << onEach << L.foo) updatedExample)
+                        (get (L.bar << each << L.foo) updatedExample)
                         [ 1, 3 ]
             , test "over through Just" <|
                 \_ ->
@@ -289,7 +288,7 @@ suite =
                                 set (L.bar << myOnEach << L.bar) "Greetings" recordWithList
                         in
                         Expect.equal
-                            (get (L.bar << onEach << L.bar) updatedExample)
+                            (get (L.bar << each << L.bar) updatedExample)
                             [ "Greetings", "Greetings" ]
                 , test "over" <|
                     \_ ->
@@ -298,7 +297,7 @@ suite =
                                 over (L.bar << myOnEach << L.foo) (\n -> n - 2) recordWithList
                         in
                         Expect.equal
-                            (get (L.bar << onEach << L.foo) updatedExample)
+                            (get (L.bar << each << L.foo) updatedExample)
                             [ 1, 3 ]
                 ]
             ]
