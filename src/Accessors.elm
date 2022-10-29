@@ -2,7 +2,7 @@ module Accessors exposing
     ( Relation, Accessor, Lens, Lens_, Setable
     , get, set, over, name, is
     , try, def, or, ok, err
-    , values, keyed, key
+    , values, keyed, key, keyI, keyF, key_
     , each, eachIdx, at
     , every, everyIdx, ix
     , fst, snd
@@ -37,7 +37,7 @@ specific action on data using that accessor.
 # Common accessors
 
 @docs try, def, or, ok, err
-@docs values, keyed, key
+@docs values, keyed, key, keyI, keyF, key_
 @docs each, eachIdx, at
 @docs every, everyIdx, ix
 @docs fst, snd
@@ -751,8 +751,108 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 
 -}
 key : String -> Relation (Maybe attribute) reachable wrap -> Relation (Dict String attribute) reachable wrap
-key k =
-    makeOneToOne_ ("{" ++ k ++ "}") (Dict.get k) (Dict.update k)
+key =
+    key_ identity
+
+
+{-| key: NON-structure preserving accessor over Dict's
+
+In terms of accessors, think of Dicts as records where each field is a Maybe.
+
+    import Dict exposing (Dict)
+    import Accessors exposing (..)
+    import Lens as L
+
+    dict : Dict Int {bar : Int}
+    dict = Dict.fromList [(1, {bar = 2})]
+
+    get (keyI 1) dict
+    --> Just {bar = 2}
+
+    get (keyI 0) dict
+    --> Nothing
+
+    get (keyI 1 << try << L.bar) dict
+    --> Just 2
+
+    set (keyI 1) Nothing dict
+    --> Dict.remove 1 dict
+
+    set (keyI 0 << try << L.bar) 3 dict
+    --> dict
+
+-}
+keyI : Int -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Int attribute) reachable wrap
+keyI =
+    key_ String.fromInt
+
+
+{-| key\_ String.fromFloat: NON-structure preserving accessor over Dict's
+
+In terms of accessors, think of Dicts as records where each field is a Maybe.
+
+    import Dict exposing (Dict)
+    import Accessors exposing (..)
+    import Lens as L
+
+    dict : Dict Float {bar : Int}
+    dict = Dict.fromList [(1.23, {bar = 2})]
+
+    get (keyF 1.23) dict
+    --> Just {bar = 2}
+
+    get (keyF 3.14) dict
+    --> Nothing
+
+    get (keyF 1.23 << try << L.bar) dict
+    --> Just 2
+
+    set (keyF 1.23) Nothing dict
+    --> Dict.remove 1.23 dict
+
+    set (keyF 3.14 << try << L.bar) 3 dict
+    --> dict
+
+-}
+keyF : Float -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Float attribute) reachable wrap
+keyF =
+    key_ String.fromFloat
+
+
+{-| key\_: NON-structure preserving accessor over Dict's
+
+In terms of accessors, think of Dicts as records where each field is a Maybe.
+
+    import Dict exposing (Dict)
+    import Accessors exposing (..)
+    import Lens as L
+
+    dict : Dict Char {bar : Int}
+    dict = Dict.fromList [('C', {bar = 2})]
+
+    keyC : Char -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Char attribute) reachable wrap
+    keyC =
+        key_ String.fromChar
+
+    get (keyC 'C') dict
+    --> Just {bar = 2}
+
+    get (keyC 'Z') dict
+    --> Nothing
+
+    get (keyC 'C' << try << L.bar) dict
+    --> Just 2
+
+    set (keyC 'C') Nothing dict
+    --> Dict.remove 'C' dict
+
+    set (keyC 'Z' << try << L.bar) 3 dict
+    --> dict
+
+-}
+key_ : (comparable -> String) -> comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
+key_ toS k =
+    makeOneToOne_ ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)
 
 
 {-| at: Structure Preserving accessor over List members.
