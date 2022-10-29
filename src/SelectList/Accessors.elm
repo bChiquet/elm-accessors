@@ -1,4 +1,4 @@
-module Accessors.SelectList exposing (each, eachIdx, selected)
+module SelectList.Accessors exposing (each, eachIdx, selected)
 
 {-| This module exposes some helpers for "miyamoen/select-list"
 
@@ -13,7 +13,7 @@ import SelectList exposing (SelectList)
 {-| This accessor combinator lets you access values inside List.
 
     import Accessors exposing (..)
-    import Accessors.SelectList as SL
+    import SelectList.Accessors as SL
     import Lens as L
     import SelectList exposing (SelectList)
 
@@ -37,7 +37,7 @@ each =
 {-| This accessor lets you traverse a list including the index of each element
 
     import Accessors exposing (..)
-    import Accessors.SelectList as SL
+    import SelectList.Accessors as SL
     import Lens as L
     import SelectList exposing (SelectList)
 
@@ -101,7 +101,7 @@ eachIdx =
 {-| This accessor lets you traverse a list including the index of each element
 
     import Accessors exposing (..)
-    import Accessors.SelectList as SL
+    import SelectList.Accessors as SL
     import Lens as L
     import SelectList exposing (SelectList)
 
