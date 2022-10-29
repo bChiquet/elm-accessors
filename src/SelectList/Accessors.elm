@@ -1,12 +1,12 @@
-module SelectList.Accessors exposing (each, eachIdx, selected)
+module SelectList.Accessors exposing (each, each_, selected)
 
 {-| This module exposes some helpers for "miyamoen/select-list"
 
-@docs each, eachIdx, selected
+@docs each, each_, selected
 
 -}
 
-import Accessors exposing (..)
+import Base exposing (Relation)
 import SelectList exposing (SelectList)
 
 
@@ -31,7 +31,7 @@ import SelectList exposing (SelectList)
 -}
 each : Relation attribute built transformed -> Relation (SelectList attribute) built (SelectList transformed)
 each =
-    makeOneToN_ ":[_]" SelectList.map SelectList.map
+    Base.makeOneToN_ ":[_]" SelectList.map SelectList.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -54,22 +54,22 @@ each =
             (idx, rec)
 
 
-    get (L.foo << SL.eachIdx) listRecord
+    get (L.foo << SL.each_) listRecord
     --> SelectList.fromLists [(0, {bar = 1})] (1, {bar = 2}) [(2, {bar = 3}), (3, {bar = 4})]
 
-    over (L.foo << SL.eachIdx) multiplyIfGTOne listRecord
+    over (L.foo << SL.each_) multiplyIfGTOne listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
 
-    get (L.foo << SL.eachIdx << snd << L.bar) listRecord
+    get (L.foo << SL.each_ << snd << L.bar) listRecord
     --> SelectList.fromLists [1] 2 [3, 4]
 
-    over (L.foo << SL.eachIdx << snd << L.bar) ((+) 1) listRecord
+    over (L.foo << SL.each_ << snd << L.bar) ((+) 1) listRecord
     --> {foo = SelectList.fromLists [{bar = 2}] {bar = 3} [{bar = 4}, {bar = 5}]}
 
 -}
-eachIdx : Relation ( Int, attribute ) reachable built -> Relation (SelectList attribute) reachable (SelectList built)
-eachIdx =
-    makeOneToN_ "[#]"
+each_ : Relation ( Int, attribute ) reachable built -> Relation (SelectList attribute) reachable (SelectList built)
+each_ =
+    Base.makeOneToN_ "[#]"
         (\fn ls ->
             let
                 ( before, current, after ) =
@@ -129,4 +129,4 @@ eachIdx =
 -}
 selected : Relation attribute reachable built -> Relation (SelectList attribute) reachable built
 selected =
-    makeOneToOne_ "[selected]" SelectList.selected SelectList.updateSelected
+    Base.makeOneToOne_ "[^]" SelectList.selected SelectList.updateSelected
