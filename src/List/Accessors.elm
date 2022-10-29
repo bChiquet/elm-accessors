@@ -12,7 +12,7 @@ import Maybe.Accessors as Maybe
 
 {-| This accessor combinator lets you access values inside List.
 
-    import Accessors exposing (..)
+    import List.Accessors as List
     import Lens as L
 
     listRecord : {foo : List {bar : Int}}
@@ -22,10 +22,10 @@ import Maybe.Accessors as Maybe
                          ]
                  }
 
-    get (L.foo << each << L.bar) listRecord
+    get (L.foo << List.each << L.bar) listRecord
     --> [2, 3, 4]
 
-    over (L.foo << each << L.bar) ((+) 1) listRecord
+    over (L.foo << List.each << L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}

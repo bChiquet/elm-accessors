@@ -8,7 +8,6 @@ module Dict.Accessors exposing (each, each_, at, id, at_)
 
 import Base exposing (Relation)
 import Dict exposing (Dict)
-import Maybe.Accessors as Maybe
 
 
 {-| values: This accessor lets you traverse a Dict including the index of each element
