@@ -348,91 +348,21 @@ or =
     Maybe.or
 
 
-{-| This accessor combinator lets you access values inside List.
-
-    import Accessors exposing (..)
-    import Lens as L
-
-    listRecord : {foo : List {bar : Int}}
-    listRecord = { foo = [ {bar = 2}
-                         , {bar = 3}
-                         , {bar = 4}
-                         ]
-                 }
-
-    get (L.foo << each << L.bar) listRecord
-    --> [2, 3, 4]
-
-    over (L.foo << each << L.bar) ((+) 1) listRecord
-    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
-
+{-| alias for [`List.Accessors.each`](List-Accessors#each)
 -}
 each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
 each =
     List.each
 
 
-{-| This accessor lets you traverse a list including the index of each element
-
-    import Accessors exposing (..)
-    import Lens as L
-
-    listRecord : {foo : List {bar : Int}}
-    listRecord = { foo = [ {bar = 2}
-                         , {bar = 3}
-                         , {bar = 4}
-                         ]
-                 }
-
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
-    multiplyIfGTOne ( idx, ({ bar } as rec) ) =
-        if idx > 0 then
-            ( idx, { bar = bar * 10 } )
-        else
-            (idx, rec)
-
-
-    get (L.foo << eachIdx) listRecord
-    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
-
-    over (L.foo << eachIdx) multiplyIfGTOne listRecord
-    --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
-
-    get (L.foo << eachIdx << snd << L.bar) listRecord
-    --> [2, 3, 4]
-
-    over (L.foo << eachIdx << snd << L.bar) ((+) 1) listRecord
-    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
-
+{-| alias for [`List.Accessors.each_`](List-Accessors#each_)
 -}
 eachIdx : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
 eachIdx =
     List.each_
 
 
-{-| at: Structure Preserving accessor over List members.
-
-    import Accessors exposing (..)
-    import Lens as L
-
-    list : List { bar : String }
-    list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    get (at 1) list
-    --> Just { bar = "Things" }
-
-    get (at 9000) list
-    --> Nothing
-
-    get (at 0 << L.bar) list
-    --> Just "Stuff"
-
-    set (at 0 << L.bar) "Whatever" list
-    --> [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    set (at 9000 << L.bar) "Whatever" list
-    --> list
-
+{-| alias for [`List.Accessors.at`](List-Accessors#at)
 -}
 at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
 at =
