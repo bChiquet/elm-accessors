@@ -3,6 +3,8 @@
   "tests": [
     "Accessors",
     "List.Accessors",
+    "Array.Accessors",
+    "Dict.Accessors",
     "SelectList.Accessors"
   ]
 }

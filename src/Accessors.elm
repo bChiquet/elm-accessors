@@ -257,6 +257,33 @@ over =
     Base.over
 
 
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    Just 1234
+        |> is try
+    --> True
+
+    Nothing
+        |> is try
+    --> False
+
+    ["Stuff", "things"]
+        |> is (at 2)
+    --> False
+
+    ["Stuff", "things"]
+        |> is (at 0)
+    --> True
+
+-}
+is :
+    (Relation attribute built attribute -> Relation structure reachable (Maybe transformed))
+    -> structure
+    -> Bool
+is =
+    Base.is
+
+
 
 -- Common Accessors
 
@@ -348,21 +375,24 @@ or =
     Maybe.or
 
 
-{-| alias for [`List.Accessors.each`](List-Accessors#each)
+{-| This accessor combinator lets you access values inside List.
+alias for [`List.Accessors.each`](List-Accessors#each)
 -}
 each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
 each =
     List.each
 
 
-{-| alias for [`List.Accessors.each_`](List-Accessors#each_)
+{-| This accessor lets you traverse a list including the index of each element
+alias for [`List.Accessors.each_`](List-Accessors#each_)
 -}
 eachIdx : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
 eachIdx =
     List.each_
 
 
-{-| alias for [`List.Accessors.at`](List-Accessors#at)
+{-| at: Structure Preserving accessor over List members.
+alias for [`List.Accessors.at`](List-Accessors#at)
 -}
 at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
 at =
@@ -370,6 +400,7 @@ at =
 
 
 {-| This accessor combinator lets you access values inside Array.
+alias for [`Array.Accessors.each`](Array-Accessors#each)
 
     import Array exposing (Array)
     import Accessors exposing (..)
@@ -393,7 +424,8 @@ every =
     Array.each
 
 
-{-| This accessor lets you traverse a list including the index of each element
+{-| This accessor lets you traverse an Array including the index of each element
+alias for [`Array.Accessors.each_`](Array-Accessors#each_)
 
     import Accessors exposing (..)
     import Lens as L
@@ -432,7 +464,38 @@ everyIdx =
     Array.each_
 
 
+{-| alias for [`Array.Accessors.at`](Array-Accessors#at)
+
+    import Accessors exposing (..)
+    import Array exposing (Array)
+    import Lens as L
+
+    arr : Array { bar : String }
+    arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    get (ix 1) arr
+    --> Just { bar = "Things" }
+
+    get (ix 9000) arr
+    --> Nothing
+
+    get (ix 0 << L.bar) arr
+    --> Just "Stuff"
+
+    set (ix 0 << L.bar) "Whatever" arr
+    --> Array.fromList [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    set (ix 9000 << L.bar) "Whatever" arr
+    --> arr
+
+-}
+ix : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
+ix =
+    Array.at
+
+
 {-| This accessor lets you access values inside the Ok variant of a Result.
+alias for [`Result.Accessors.onOk`](Result-Accessors#onOk)
 
     import Accessors exposing (..)
     import Lens as L
@@ -461,6 +524,7 @@ ok =
 
 
 {-| This accessor lets you access values inside the Err variant of a Result.
+alias for [`Result.Accessors.onErr`](Result-Accessors#onErr)
 
     import Accessors exposing (..)
     import Lens as L
@@ -489,6 +553,7 @@ err =
 
 
 {-| values: This accessor lets you traverse a Dict including the index of each element
+alias for [`Dict.Accessors.each`](Dict-Accessors#each)
 
     import Accessors exposing (..)
     import Lens as L
@@ -520,6 +585,7 @@ values =
 
 
 {-| keyed: This accessor lets you traverse a Dict including the index of each element
+alias for [`Dict.Accessors.each_`](Dict-Accessors#each_)
 
     import Accessors exposing (..)
     import Lens as L
@@ -559,6 +625,7 @@ keyed =
 
 
 {-| key: NON-structure preserving accessor over Dict's
+alias for [`Dict.Accessors.at`](Dict-Accessors#at)
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -587,10 +654,11 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 key : String -> Relation (Maybe attribute) reachable wrap -> Relation (Dict String attribute) reachable wrap
 key =
-    key_ identity
+    Dict.at
 
 
 {-| key: NON-structure preserving accessor over Dict's
+alias for [`Dict.Accessors.id`](Dict-Accessors#id)
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -623,6 +691,7 @@ keyI =
 
 
 {-| `key_`: NON-structure preserving accessor over Dict's
+alias for [`Dict.Accessors.at_`](Dict-Accessors#at_)
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -658,39 +727,8 @@ key_ =
     Dict.at_
 
 
-{-| This accessor combinator lets you access Array indices.
-
-In terms of accessors, think of Dicts as records where each field is a Maybe.
-
-    import Array exposing (Array)
-    import Accessors exposing (..)
-    import Lens as L
-
-    arr : Array { bar : String }
-    arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    get (ix 1) arr
-    --> Just { bar = "Things" }
-
-    get (ix 9000) arr
-    --> Nothing
-
-    get (ix 0 << L.bar) arr
-    --> Just "Stuff"
-
-    set (ix 0 << L.bar) "Whatever" arr
-    --> Array.fromList [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    set (ix 9000 << L.bar) "Whatever" arr
-    --> arr
-
--}
-ix : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
-ix =
-    Array.at
-
-
 {-| Lens over the first component of a Tuple
+alias for [`Tuple.Accessors.fst`](Tuple-Accessors#fst)
 
     import Accessors exposing (..)
 
@@ -712,7 +750,7 @@ fst =
     Tuple.fst
 
 
-{-|
+{-| alias for [`Tuple.Accessors.snd`](Tuple-Accessors#snd)
 
     import Accessors exposing (..)
 
@@ -735,30 +773,3 @@ fst =
 snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
 snd =
     Tuple.snd
-
-
-{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
-
-    Just 1234
-        |> is try
-    --> True
-
-    Nothing
-        |> is try
-    --> False
-
-    ["Stuff", "things"]
-        |> is (at 2)
-    --> False
-
-    ["Stuff", "things"]
-        |> is (at 0)
-    --> True
-
--}
-is :
-    (Relation attribute built attribute -> Relation structure reachable (Maybe transformed))
-    -> structure
-    -> Bool
-is =
-    Base.is
