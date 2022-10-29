@@ -28,7 +28,7 @@ type alias Person =
 
 suite : Test
 suite =
-    describe "Laws"
+    describe "Laws Specs"
         [ isLens L.name personFuzzer strFun string
         , isLens L.age personFuzzer intFun int
         , isSetable (L.email << A.try) personFuzzer strFun string

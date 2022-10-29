@@ -1,0 +1,35 @@
+{
+  "author": "Austin Erlandson",
+  "name": "elm-accessors",
+  "description": "Describe how to reach a structure's content to [map](Reach#over)/[`view`](Reach#view) arbitrary content more easily",
+  "version": "1.0.0",
+  "license": "MIT",
+  "homepage": "https://github.com/erlandsona/elm-accessors#README",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erlandsona/elm-accessors.git"
+  },
+  "bugs": {
+    "url": "https://github.com/erlandsona/elm-accessors/issues"
+  },
+  "scripts": {
+    "test": "run-p elm:test elm:doctest",
+    "test:watch": "npm-watch test",
+    "elm:test": "elm-test",
+    "elm:doctest": "elm-verify-examples -r"
+  },
+  "watch": {
+    "test": {
+      "patterns": [ "src", "tests" ],
+      "extensions": "elm",
+      "ignore": "tests/VerifyExamples"
+    }
+  },
+  "devDependencies": {
+    "elm-review": "^2.7.6",
+    "elm-test": "^0.19.1-revision10",
+    "elm-verify-examples": "^5.2.0",
+    "npm-run-all": "^4.1.5",
+    "npm-watch": "^0.11.0"
+  }
+}
