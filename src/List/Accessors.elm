@@ -6,7 +6,7 @@ module List.Accessors exposing (each, each_, at, id)
 
 -}
 
-import Base exposing (Relation)
+import Base exposing (Optic)
 import Maybe.Accessors as Maybe
 
 
@@ -30,7 +30,7 @@ import Maybe.Accessors as Maybe
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
+each : Optic attribute built transformed -> Optic (List attribute) built (List transformed)
 each =
     Base.makeOneToN ":[]" List.map List.map
 
@@ -69,7 +69,7 @@ each =
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each_ : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
+each_ : Optic ( Int, attribute ) reachable built -> Optic (List attribute) reachable (List built)
 each_ =
     Base.makeOneToN "#[]"
         (\fn ->
@@ -107,7 +107,7 @@ each_ =
     --> list
 
 -}
-at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
+at : Int -> Optic v reachable wrap -> Optic (List v) reachable (Maybe wrap)
 at idx =
     Base.makeOneToOne ("(" ++ String.fromInt idx ++ ")")
         (if idx < 0 then
@@ -158,7 +158,7 @@ at idx =
     --> list
 
 -}
-id : Int -> Relation { m | id : Int } reachable wrap -> Relation (List { m | id : Int }) reachable (Maybe wrap)
+id : Int -> Optic { m | id : Int } reachable wrap -> Optic (List { m | id : Int }) reachable (Maybe wrap)
 id key =
     Base.makeOneToOne ("(" ++ String.fromInt key ++ ")")
         (if key < 0 then

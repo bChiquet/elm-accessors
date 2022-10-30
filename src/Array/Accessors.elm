@@ -7,7 +7,7 @@ module Array.Accessors exposing (each, each_, at, id)
 -}
 
 import Array exposing (Array)
-import Base exposing (Relation)
+import Base exposing (Optic)
 import Maybe.Accessors as Maybe
 
 
@@ -31,7 +31,7 @@ import Maybe.Accessors as Maybe
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each : Relation attribute built transformed -> Relation (Array attribute) built (Array transformed)
+each : Optic attribute built transformed -> Optic (Array attribute) built (Array transformed)
 each =
     Base.makeOneToN "[]" Array.map Array.map
 
@@ -71,7 +71,7 @@ each =
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
-each_ : Relation ( Int, attribute ) reachable built -> Relation (Array attribute) reachable (Array built)
+each_ : Optic ( Int, attribute ) reachable built -> Optic (Array attribute) reachable (Array built)
 each_ =
     Base.makeOneToN "#[]"
         (\fn ->
@@ -112,7 +112,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> arr
 
 -}
-at : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
+at : Int -> Optic v reachable wrap -> Optic (Array v) reachable (Maybe wrap)
 at idx =
     Base.makeOneToOne
         ("[" ++ String.fromInt idx ++ "]")
@@ -171,7 +171,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> arr
 
 -}
-id : Int -> Relation { m | id : Int } reachable wrap -> Relation (Array { m | id : Int }) reachable (Maybe wrap)
+id : Int -> Optic { m | id : Int } reachable wrap -> Optic (Array { m | id : Int }) reachable (Maybe wrap)
 id key =
     Base.makeOneToOne
         ("[" ++ String.fromInt key ++ "]")

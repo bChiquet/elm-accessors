@@ -6,7 +6,7 @@ module Dict.Accessors exposing (each, each_, at, id, at_)
 
 -}
 
-import Base exposing (Relation)
+import Base exposing (Optic)
 import Dict exposing (Dict)
 
 
@@ -37,7 +37,7 @@ import Dict exposing (Dict)
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-each : Relation attribute reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+each : Optic attribute reachable built -> Optic (Dict comparable attribute) reachable (Dict comparable built)
 each =
     Base.makeOneToN "{_}"
         (\fn -> Dict.map (\_ -> fn))
@@ -79,7 +79,7 @@ each =
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-each_ : Relation ( comparable, attribute ) reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+each_ : Optic ( comparable, attribute ) reachable built -> Optic (Dict comparable attribute) reachable (Dict comparable built)
 each_ =
     Base.makeOneToN "{_}"
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn))
@@ -114,7 +114,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-at : String -> Relation (Maybe attribute) reachable wrap -> Relation (Dict String attribute) reachable wrap
+at : String -> Optic (Maybe attribute) reachable wrap -> Optic (Dict String attribute) reachable wrap
 at =
     at_ identity
 
@@ -147,7 +147,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-id : Int -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Int attribute) reachable wrap
+id : Int -> Optic (Maybe attribute) reachable wrap -> Optic (Dict Int attribute) reachable wrap
 id =
     at_ String.fromInt
 
@@ -184,6 +184,6 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-at_ : (comparable -> String) -> comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
+at_ : (comparable -> String) -> comparable -> Optic (Maybe attribute) reachable wrap -> Optic (Dict comparable attribute) reachable wrap
 at_ toS k =
     Base.makeOneToOne ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)

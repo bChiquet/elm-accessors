@@ -1,6 +1,6 @@
 module Tree.Accessors exposing (each, labelAt, onLabel, onPath)
 
-import Base exposing (Lens, Relation)
+import Base exposing (Lens, Optic)
 import Tree exposing (Tree)
 import Tree.Extra.Lue as Tree
 import TreePath exposing (TreePath)
@@ -14,8 +14,8 @@ onLabel =
 
 
 each :
-    Relation label reachable wrap
-    -> Relation (Tree label) reachable (Tree wrap)
+    Optic label reachable wrap
+    -> Optic (Tree label) reachable (Tree wrap)
 each =
     Base.makeOneToN
         "<>"

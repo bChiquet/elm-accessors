@@ -66,7 +66,7 @@ import Tuple.Accessors as Tuple
 
 
 type alias Relation structure attribute wrap =
-    Base.Relation structure attribute wrap
+    Base.Optic structure attribute wrap
 
 
 

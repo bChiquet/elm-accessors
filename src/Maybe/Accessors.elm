@@ -1,6 +1,6 @@
 module Maybe.Accessors exposing (def, or, try)
 
-import Base exposing (Relation)
+import Base exposing (Optic)
 
 
 {-| This accessor combinator lets you access values inside Maybe.
@@ -26,7 +26,7 @@ import Base exposing (Relation)
     --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
-try : Relation attribute built transformed -> Relation (Maybe attribute) built (Maybe transformed)
+try : Optic attribute built transformed -> Optic (Maybe attribute) built (Maybe transformed)
 try =
     Base.makeOneToN "?" Maybe.map Maybe.map
 
@@ -54,7 +54,7 @@ try =
     ----> 0
 
 -}
-def : attribute -> Relation attribute reachable wrap -> Relation (Maybe attribute) reachable wrap
+def : attribute -> Optic attribute reachable wrap -> Optic (Maybe attribute) reachable wrap
 def d =
     Base.makeOneToN "??"
         (\f -> Maybe.withDefault d >> f)
@@ -86,8 +86,8 @@ def d =
 -}
 or :
     attribute
-    -> (Relation attribute attribute attribute -> Relation structure attribute (Maybe attribute))
-    -> (Relation attribute other attribute -> Relation structure other attribute)
+    -> (Optic attribute attribute attribute -> Optic structure attribute (Maybe attribute))
+    -> (Optic attribute other attribute -> Optic structure other attribute)
 or d l =
     Base.makeOneToOne "||"
         (Base.view l >> Maybe.withDefault d)

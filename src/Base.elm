@@ -1,5 +1,5 @@
 module Base exposing
-    ( Relation, Accessor, Lens, Lens_, Setable
+    ( Optic, Accessor, Lens, Lens_, Setable
     , makeOneToOne, makeOneToN
     , is, name, over, set, view
     )
@@ -7,9 +7,9 @@ module Base exposing
 {-|
 
 
-# Relation
+# Optics
 
-@docs Relation, Accessor, Lens, Lens_, Setable
+@docs Optic, Accessor, Lens, Lens_, Setable
 
 
 # Build your own accessors
@@ -19,10 +19,6 @@ Accessors are built using these functions:
 @docs makeOneToOne, makeOneToN
 
 -}
-
-
-type alias Accessor structure attribute get attrGet over attrOver =
-    Relation attribute attrGet attrOver -> Relation structure get over
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
@@ -36,12 +32,16 @@ Implementation: A relation is a banal record storing a `get` function and an
 `over` function.
 
 -}
-type Relation structure attribute wrap
-    = Relation
+type Optic structure attribute wrap
+    = Optic
         { view : structure -> wrap
         , over : (attribute -> attribute) -> (structure -> structure)
         , name : String
         }
+
+
+type alias Accessor structure attribute get attrGet over attrOver =
+    Optic attribute attrGet attrOver -> Optic structure get over
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -73,8 +73,8 @@ type alias
         -- Focus After action
         built
     =
-    Relation attribute built transformed
-    -> Relation structure built transformed
+    Optic attribute built transformed
+    -> Optic structure built transformed
 
 
 {-| Simplified version of Lens but seems to break type inference for more complicated compositions.
@@ -86,7 +86,7 @@ type alias Lens_ structure attribute =
 {-| Type of a composition of accessors that `set` can be called with.
 -}
 type alias Setable structure transformed attribute built =
-    Relation attribute attribute built -> Relation structure attribute transformed
+    Optic attribute attribute built -> Optic structure attribute transformed
 
 
 {-| This exposes a description field that's necessary for use with the name function
@@ -105,9 +105,9 @@ makeOneToOne :
     String
     -> (structure -> attribute)
     -> ((attribute -> attribute) -> structure -> structure)
-    -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
-makeOneToOne n getter mapper (Relation sub) =
-    Relation
+    -> (Optic attribute reachable wrap -> Optic structure reachable wrap)
+makeOneToOne n getter mapper (Optic sub) =
+    Optic
         { view = \super -> sub.view (getter super)
         , over = \change super -> mapper (sub.over change) super
         , name = n ++ sub.name
@@ -130,10 +130,10 @@ makeOneToN :
     -> ((attribute -> built) -> structure -> transformed)
     -> ((attribute -> attribute) -> structure -> structure)
     -- What is reachable here?
-    -> Relation attribute reachable built
-    -> Relation structure reachable transformed
-makeOneToN n getter mapper (Relation sub) =
-    Relation
+    -> Optic attribute reachable built
+    -> Optic structure reachable transformed
+makeOneToN n getter mapper (Optic sub) =
+    Optic
         { view = \super -> getter sub.view super
         , over = \change super -> mapper (sub.over change) super
         , name = n ++ sub.name
@@ -156,14 +156,14 @@ get (foo << bar) myRecord
 
 -}
 view :
-    (Relation attribute built attribute -> Relation structure reachable transformed)
+    (Optic attribute built attribute -> Optic structure reachable transformed)
     -> structure
     -> transformed
 view accessor s =
     let
-        (Relation relation) =
+        (Optic relation) =
             accessor
-                (Relation
+                (Optic
                     { view = identity
                     , over = \_ -> void "`over` should never be called from `get`"
                     , name = ""
@@ -193,7 +193,7 @@ view accessor s =
 
 -}
 is :
-    (Relation attribute built attribute -> Relation structure reachable (Maybe transformed))
+    (Optic attribute built attribute -> Optic structure reachable (Maybe transformed))
     -> structure
     -> Bool
 is prism sup =
@@ -207,9 +207,9 @@ set :
     -> structure
 set accessor value s =
     let
-        (Relation relation) =
+        (Optic relation) =
             accessor
-                (Relation
+                (Optic
                     { view = \_ -> void "`get` should never be called when `set` is executed"
                     , over = identity
                     , name = ""
@@ -220,15 +220,15 @@ set accessor value s =
 
 
 over :
-    (Relation attribute attribute built -> Relation structure attribute transformed)
+    (Optic attribute attribute built -> Optic structure attribute transformed)
     -> (attribute -> attribute)
     -> structure
     -> structure
 over accessor change s =
     let
-        (Relation relation) =
+        (Optic relation) =
             accessor
-                (Relation
+                (Optic
                     { view = \_ -> void "`get` should never be called when `over` is executed"
                     , over = identity
                     , name = ""
@@ -241,9 +241,9 @@ over accessor change s =
 name : Accessor a b c d e f -> String
 name accessor =
     let
-        (Relation relation) =
+        (Optic relation) =
             accessor
-                (Relation
+                (Optic
                     { view = \_ -> void "`get` should never be called when `name` is executed"
                     , over = \_ -> void "`over` should never be called when `name` is executed"
                     , name = ""

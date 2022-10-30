@@ -1,6 +1,6 @@
 module Result.Accessors exposing (onErr, onOk)
 
-import Base exposing (Relation)
+import Base exposing (Optic)
 
 
 {-| This accessor lets you access values inside the Ok variant of a Result.
@@ -26,7 +26,7 @@ import Base exposing (Relation)
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
-onOk : Relation attribute built transformed -> Relation (Result x attribute) built (Maybe transformed)
+onOk : Optic attribute built transformed -> Optic (Result x attribute) built (Maybe transformed)
 onOk =
     Base.makeOneToN "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
 
@@ -54,7 +54,7 @@ onOk =
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
-onErr : Relation attribute built transformed -> Relation (Result attribute x) built (Maybe transformed)
+onErr : Optic attribute built transformed -> Optic (Result attribute x) built (Maybe transformed)
 onErr =
     let
         getter fn res =

@@ -1,6 +1,6 @@
 module Tuple.Accessors exposing (fst, snd)
 
-import Base exposing (Relation)
+import Base exposing (Optic)
 
 
 {-| Lens over the first component of a Tuple
@@ -20,7 +20,7 @@ import Base exposing (Relation)
     --> ("IT'S OVER!!!", 1)
 
 -}
-fst : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
+fst : Optic sub reachable wrap -> Optic ( sub, x ) reachable wrap
 fst =
     Base.makeOneToOne "_1" Tuple.first Tuple.mapFirst
 
@@ -45,6 +45,6 @@ fst =
     --> ("IT'S OVER!!!", 9000)
 
 -}
-snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
+snd : Optic sub reachable wrap -> Optic ( x, sub ) reachable wrap
 snd =
     Base.makeOneToOne "_2" Tuple.second Tuple.mapSecond
