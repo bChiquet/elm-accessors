@@ -1,6 +1,5 @@
 module Accessors exposing
-    ( Relation
-    , Accessor, Lens, Lens_, Setable
+    ( Optic, Lens
     , makeOneToOne, makeOneToN
     , get, set, over, name, is
     , try, def, or, ok, err
@@ -13,16 +12,16 @@ module Accessors exposing
 {-| Accessors are a way of operating on nested data in Elm that doesn't require gobs of boilerplate.
 
 
-## Relation: is the opaque underlying interface that enables the rest of the library to work.
+## Optic: is the opaque underlying interface that enables the rest of the library to work.
 
-@docs Relation
+@docs Optic
 
 
 ## Type Aliases: are shorthands from the Optics nomenclature that make writing your
 
 own accessors more convenient and hopefully easier to understand.
 
-@docs Accessor, Lens, Lens_, Setable
+@docs Optic, Lens
 
 
 ## Constructors
@@ -62,21 +61,15 @@ import Tuple.Accessors as Tuple
 
 
 
--- Relation
+-- Optic
 
 
-type alias Relation structure attribute wrap =
-    Base.Optic structure attribute wrap
+type alias Optic value view over =
+    Base.Optic value view over
 
 
 
 -- Type Aliases
-
-
-{-| The most general version of this type that everything else specializes
--}
-type alias Accessor structure attribute get attrGet over attrOver =
-    Base.Accessor structure attribute get attrGet over attrOver
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -97,42 +90,11 @@ whereas with this approach we're able to make use of Elm's built in `<<` operato
 to get/set/over deeply nested data.
 
 -}
-type alias
-    Lens
-        -- Structure Before Action
-        structure
-        -- Structure After Action
-        transformed
-        -- Focus Before action
-        attribute
-        -- Focus After action
-        built
-    =
-    Base.Lens structure transformed attribute built
-
-
-{-| Simplified version of Lens but seems to break type inference for more complicated compositions.
--}
-type alias Lens_ structure attribute =
-    Lens structure attribute attribute attribute
+type alias Lens value view over =
+    Base.Lens value view over
 
 
 
--- type alias Getable structure transformed attribute built reachable =
---     Relation attribute built attribute
---     -> Relation structure reachable transformed
-
-
-{-| Type of a composition of accessors that `set` can be called with.
--}
-type alias Setable structure transformed attribute built =
-    Relation attribute attribute built -> Relation structure attribute transformed
-
-
-
--- type alias Watami structure transformed attribute built =
---     Relation attribute (Maybe built) transformed
---     -> Relation structure (Maybe built) (Maybe transformed)
 -- Constructors
 
 
@@ -140,7 +102,7 @@ type alias Setable structure transformed attribute built =
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    foo : Relation field sub wrap -> Relation { rec | foo : field } sub wrap
+    foo : Optic attr view over -> Optic { rec | foo : attr } view over
     foo =
         makeOneToOne
             ".foo"
@@ -150,9 +112,10 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToOne :
     String
-    -> (structure -> attribute)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
+    -> (value -> attr)
+    -> ((attr -> attrOver) -> value -> over)
+    -> Optic attr attrView attrOver
+    -> Optic value attrView over
 makeOneToOne =
     Base.makeOneToOne
 
@@ -161,7 +124,7 @@ makeOneToOne =
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
+    each : Optic attr view over -> Optic (List attr) view (List over)
     each =
         makeOneToN "[]"
             List.map
@@ -170,11 +133,10 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToN :
     String
-    -> ((attribute -> built) -> structure -> transformed)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -- What is reachable here?
-    -> Relation attribute reachable built
-    -> Relation structure reachable transformed
+    -> ((attr -> attrView) -> (value -> view))
+    -> ((attr -> attrOver) -> (value -> over))
+    -> Optic attr attrView attrOver
+    -> Optic value view over
 makeOneToN =
     Base.makeOneToN
 
@@ -195,16 +157,16 @@ get (foo << bar) myRecord
 
 -}
 get :
-    (Relation attribute built attribute -> Relation structure reachable transformed)
-    -> structure
-    -> transformed
+    (Optic attr attr attrOver -> Optic value view over)
+    -> value
+    -> view
 get =
     Base.view
 
 
 {-| This function gives the name of the function as a string...
 -}
-name : Accessor a b c d e f -> String
+name : (Optic attr attrView attrOver -> Optic value view over) -> String
 name =
     Base.name
 
@@ -222,18 +184,14 @@ set (foo << bar) "Hi!" myRecord
 ```
 
 -}
-set :
-    Setable structure transformed attribute built
-    -> attribute
-    -> structure
-    -> structure
+set : (Optic attr attrView attrOver -> Optic value view over) -> attrOver -> value -> over
 set =
     Base.set
 
 
 
 -- type alias Modifiable =
---    Relation attribute x y -> Relation structure a transformed
+--    Optic attr attrView attrOver -> Optic value view over
 
 
 {-| The over function takes:
@@ -249,11 +207,7 @@ over (foo << qux) ((+) 1) myRecord
 ```
 
 -}
-over :
-    (Relation attribute attribute built -> Relation structure attribute transformed)
-    -> (attribute -> attribute)
-    -> structure
-    -> structure
+over : (Optic attr attrView attrOver -> Optic value view over) -> (attr -> attrOver) -> value -> over
 over =
     Base.over
 
@@ -277,10 +231,7 @@ over =
     --> True
 
 -}
-is :
-    (Relation attribute built attribute -> Relation structure reachable (Maybe transformed))
-    -> structure
-    -> Bool
+is : (Optic attr attr attrOver -> Optic value (Maybe view) over) -> value -> Bool
 is =
     Base.is
 
@@ -312,7 +263,7 @@ is =
     --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
-try : Relation attribute built transformed -> Relation (Maybe attribute) built (Maybe transformed)
+try : Optic attr view over -> Optic (Maybe attr) (Maybe view) (Maybe over)
 try =
     Maybe.try
 
@@ -340,7 +291,7 @@ try =
     ----> 0
 
 -}
-def : attribute -> Relation attribute reachable wrap -> Relation (Maybe attribute) reachable wrap
+def : attr -> Optic attr view over -> Optic (Maybe attr) view (Maybe over)
 def =
     Maybe.def
 
@@ -368,10 +319,7 @@ def =
     --> 0
 
 -}
-or :
-    attribute
-    -> (Relation attribute attribute attribute -> Relation structure attribute (Maybe attribute))
-    -> (Relation attribute other attribute -> Relation structure other attribute)
+or : attr -> (Optic attr attr attrOver -> Optic value (Maybe attr) over) -> Optic attr attrView attrOver -> Optic value attrView over
 or =
     Maybe.or
 
@@ -379,7 +327,7 @@ or =
 {-| This accessor combinator lets you access values inside List.
 alias for [`List.Accessors.each`](List-Accessors#each)
 -}
-each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
+each : Optic attr view over -> Optic (List attr) (List view) (List over)
 each =
     List.each
 
@@ -387,7 +335,7 @@ each =
 {-| This accessor lets you traverse a list including the index of each element
 alias for [`List.Accessors.each_`](List-Accessors#each_)
 -}
-eachIdx : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
+eachIdx : Optic ( Int, attr ) view ( ignored, over ) -> Optic (List attr) (List view) (List over)
 eachIdx =
     List.each_
 
@@ -395,7 +343,7 @@ eachIdx =
 {-| at: Structure Preserving accessor over List members.
 alias for [`List.Accessors.at`](List-Accessors#at)
 -}
-at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
+at : Int -> Optic attr view attr -> Optic (List attr) (Maybe view) (List attr)
 at =
     List.at
 
@@ -420,7 +368,7 @@ alias for [`Array.Accessors.each`](Array-Accessors#each)
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-every : Relation attribute built transformed -> Relation (Array attribute) built (Array transformed)
+every : Optic attr view over -> Optic (Array attr) (Array view) (Array over)
 every =
     Array.each
 
@@ -460,7 +408,7 @@ alias for [`Array.Accessors.each_`](Array-Accessors#each_)
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
-everyIdx : Relation ( Int, attribute ) reachable built -> Relation (Array attribute) reachable (Array built)
+everyIdx : Optic ( Int, attr ) view ( ignored, over ) -> Optic (Array attr) (Array view) (Array over)
 everyIdx =
     Array.each_
 
@@ -490,7 +438,7 @@ everyIdx =
     --> arr
 
 -}
-ix : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
+ix : Int -> Optic over view over -> Optic (Array over) (Maybe view) (Array over)
 ix =
     Array.at
 
@@ -519,7 +467,7 @@ alias for [`Result.Accessors.onOk`](Result-Accessors#onOk)
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
-ok : Relation attribute built transformed -> Relation (Result x attribute) built (Maybe transformed)
+ok : Optic attr view over -> Optic (Result ignored attr) (Maybe view) (Result ignored over)
 ok =
     Result.onOk
 
@@ -548,7 +496,7 @@ alias for [`Result.Accessors.onErr`](Result-Accessors#onErr)
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
-err : Relation attribute built transformed -> Relation (Result attribute x) built (Maybe transformed)
+err : Optic attr view over -> Optic (Result attr ignored) (Maybe view) (Result over ignored)
 err =
     Result.onErr
 
@@ -580,7 +528,7 @@ alias for [`Dict.Accessors.each`](Dict-Accessors#each)
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-values : Relation attribute reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+values : Optic attr view over -> Optic (Dict key attr) (Dict key view) (Dict key over)
 values =
     Dict.each
 
@@ -620,7 +568,7 @@ alias for [`Dict.Accessors.each_`](Dict-Accessors#each_)
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-keyed : Relation ( comparable, attribute ) reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+keyed : Optic ( key, attr ) view ( ignored, over ) -> Optic (Dict key attr) (Dict key view) (Dict key over)
 keyed =
     Dict.each_
 
@@ -653,7 +601,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-key : String -> Relation (Maybe attribute) reachable wrap -> Relation (Dict String attribute) reachable wrap
+key : String -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict String attr) view (Dict String attr)
 key =
     Dict.at
 
@@ -686,7 +634,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-keyI : Int -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Int attribute) reachable wrap
+keyI : Int -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Int attr) view (Dict Int attr)
 keyI =
     Dict.id
 
@@ -703,7 +651,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     dict : Dict Char {bar : Int}
     dict = Dict.fromList [('C', {bar = 2})]
 
-    keyC : Char -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Char attribute) reachable wrap
+    keyC : Char -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Char attr) view (Dict Char attr)
     keyC =
         key_ String.fromChar
 
@@ -723,7 +671,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-key_ : (comparable -> String) -> comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
+key_ : (comparable -> String) -> comparable -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict comparable attr) view (Dict comparable attr)
 key_ =
     Dict.at_
 
@@ -746,7 +694,7 @@ alias for [`Tuple.Accessors.fst`](Tuple-Accessors#fst)
     --> ("IT'S OVER!!!", 1)
 
 -}
-fst : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
+fst : Optic attr view over -> Optic ( attr, ignored ) view ( over, ignored )
 fst =
     Tuple.fst
 
@@ -771,6 +719,6 @@ fst =
     --> ("IT'S OVER!!!", 9000)
 
 -}
-snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
+snd : Optic attr view over -> Optic ( ignored, attr ) view ( ignored, over )
 snd =
     Tuple.snd

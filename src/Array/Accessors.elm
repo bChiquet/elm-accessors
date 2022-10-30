@@ -31,7 +31,7 @@ import Maybe.Accessors as Maybe
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each : Optic attribute built transformed -> Optic (Array attribute) built (Array transformed)
+each : Optic attr view over -> Optic (Array attr) (Array view) (Array over)
 each =
     Base.makeOneToN "[]" Array.map Array.map
 
@@ -71,7 +71,7 @@ each =
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
-each_ : Optic ( Int, attribute ) reachable built -> Optic (Array attribute) reachable (Array built)
+each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (Array attr) (Array view) (Array over)
 each_ =
     Base.makeOneToN "#[]"
         (\fn ->
@@ -112,7 +112,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> arr
 
 -}
-at : Int -> Optic v reachable wrap -> Optic (Array v) reachable (Maybe wrap)
+at : Int -> Optic over view over -> Optic (Array over) (Maybe view) (Array over)
 at idx =
     Base.makeOneToOne
         ("[" ++ String.fromInt idx ++ "]")
@@ -121,24 +121,25 @@ at idx =
             -- NOTE: `<< try` at the end ensures we can't delete any existing keys
             -- so `List.filterMap identity` should be safe
             -- TODO: there's a better way to write this no doubt.
-            Array.indexedMap
-                (\idx_ v ->
-                    if idx == idx_ then
-                        fn (Just v)
+            Array.foldl
+                (\el ( idx_, acc ) ->
+                    ( idx_ + 1
+                    , case
+                        if idx == idx_ then
+                            fn (Just el)
 
-                    else
-                        Just v
-                )
-                >> Array.foldl
-                    (\e acc ->
-                        case e of
-                            Just v ->
-                                Array.push v acc
+                        else
+                            Just el
+                      of
+                        Just v ->
+                            Array.push v acc
 
-                            Nothing ->
-                                acc
+                        Nothing ->
+                            acc
                     )
-                    Array.empty
+                )
+                ( 0, Array.empty )
+                >> Tuple.second
         )
         << Maybe.try
 
@@ -171,7 +172,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> arr
 
 -}
-id : Int -> Optic { m | id : Int } reachable wrap -> Optic (Array { m | id : Int }) reachable (Maybe wrap)
+id : Int -> Optic { attr | id : Int } view { attr | id : Int } -> Optic (Array { attr | id : Int }) (Maybe view) (Array { attr | id : Int })
 id key =
     Base.makeOneToOne
         ("[" ++ String.fromInt key ++ "]")

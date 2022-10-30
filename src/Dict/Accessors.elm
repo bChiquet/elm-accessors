@@ -37,7 +37,7 @@ import Dict exposing (Dict)
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-each : Optic attribute reachable built -> Optic (Dict comparable attribute) reachable (Dict comparable built)
+each : Optic attr view over -> Optic (Dict key attr) (Dict key view) (Dict key over)
 each =
     Base.makeOneToN "{_}"
         (\fn -> Dict.map (\_ -> fn))
@@ -79,7 +79,7 @@ each =
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-each_ : Optic ( comparable, attribute ) reachable built -> Optic (Dict comparable attribute) reachable (Dict comparable built)
+each_ : Optic ( key, attr ) view ( ignored, over ) -> Optic (Dict key attr) (Dict key view) (Dict key over)
 each_ =
     Base.makeOneToN "{_}"
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn))
@@ -114,7 +114,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-at : String -> Optic (Maybe attribute) reachable wrap -> Optic (Dict String attribute) reachable wrap
+at : String -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict String attr) view (Dict String attr)
 at =
     at_ identity
 
@@ -147,7 +147,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-id : Int -> Optic (Maybe attribute) reachable wrap -> Optic (Dict Int attribute) reachable wrap
+id : Int -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Int attr) view (Dict Int attr)
 id =
     at_ String.fromInt
 
@@ -156,7 +156,7 @@ id =
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
-    import Accessors exposing (Relation, get, set, snd, try)
+    import Accessors exposing (Optic, get, set, snd, try)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -164,7 +164,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     dict : Dict Char {bar : Int}
     dict = Dict.fromList [('C', {bar = 2})]
 
-    atC : Char -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Char attribute) reachable wrap
+    atC : Char -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Char attr) view (Dict Char attr)
     atC =
         Dict.at_ String.fromChar
 
@@ -184,6 +184,10 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-at_ : (comparable -> String) -> comparable -> Optic (Maybe attribute) reachable wrap -> Optic (Dict comparable attribute) reachable wrap
+at_ :
+    (comparable -> String)
+    -> comparable
+    -> Optic (Maybe attr) view (Maybe attr)
+    -> Optic (Dict comparable attr) view (Dict comparable attr)
 at_ toS k =
     Base.makeOneToOne ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)

@@ -13,7 +13,7 @@
     "url": "https://github.com/erlandsona/elm-accessors/issues"
   },
   "scripts": {
-    "test": "run-p elm:test elm:doctest",
+    "test": "run-s elm:doctest elm:test",
     "test:watch": "npm-watch test",
     "elm:test": "elm-test",
     "elm:doctest": "elm-verify-examples -r"

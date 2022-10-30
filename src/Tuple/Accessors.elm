@@ -5,46 +5,48 @@ import Base exposing (Optic)
 
 {-| Lens over the first component of a Tuple
 
-    import Accessors exposing (..)
+    import Base exposing (view, set, over)
+    import Tuple.Accessors as Tuple
 
     charging : (String, Int)
     charging = ("It's over", 1)
 
-    get fst charging
+    view Tuple.fst charging
     --> "It's over"
 
-    set fst "It's over" charging
+    set Tuple.fst "It's over" charging
     --> ("It's over", 1)
 
-    over fst (\s -> String.toUpper s ++ "!!!") charging
+    over Tuple.fst (\s -> String.toUpper s ++ "!!!") charging
     --> ("IT'S OVER!!!", 1)
 
 -}
-fst : Optic sub reachable wrap -> Optic ( sub, x ) reachable wrap
+fst : Optic attr view over -> Optic ( attr, ignored ) view ( over, ignored )
 fst =
     Base.makeOneToOne "_1" Tuple.first Tuple.mapFirst
 
 
 {-|
 
-    import Accessors exposing (..)
+    import Base exposing (view, set, over)
+    import Tuple.Accessors as Tuple
 
     meh : (String, Int)
     meh = ("It's over", 1)
 
-    get snd meh
+    view Tuple.snd meh
     --> 1
 
-    set snd 1125 meh
+    set Tuple.snd 1125 meh
     --> ("It's over", 1125)
 
     meh
-        |> set snd 1125
-        |> over fst (\s -> String.toUpper s ++ "!!!")
-        |> over snd ((*) 8)
+        |> set Tuple.snd 1125
+        |> over Tuple.fst (\s -> String.toUpper s ++ "!!!")
+        |> over Tuple.snd ((*) 8)
     --> ("IT'S OVER!!!", 9000)
 
 -}
-snd : Optic sub reachable wrap -> Optic ( x, sub ) reachable wrap
+snd : Optic attr view over -> Optic ( ignored, attr ) view ( ignored, over )
 snd =
     Base.makeOneToOne "_2" Tuple.second Tuple.mapSecond

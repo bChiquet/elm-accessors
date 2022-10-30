@@ -26,7 +26,7 @@ import Base exposing (Optic)
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
-onOk : Optic attribute built transformed -> Optic (Result x attribute) built (Maybe transformed)
+onOk : Optic attr view over -> Optic (Result ignored attr) (Maybe view) (Result ignored over)
 onOk =
     Base.makeOneToN "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
 
@@ -54,7 +54,7 @@ onOk =
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
-onErr : Optic attribute built transformed -> Optic (Result attribute x) built (Maybe transformed)
+onErr : Optic attr view over -> Optic (Result attr ignored) (Maybe view) (Result over ignored)
 onErr =
     let
         getter fn res =

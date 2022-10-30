@@ -2,9 +2,13 @@
   "root": "../src",
   "tests": [
     "Accessors",
-    "List.Accessors",
     "Array.Accessors",
     "Dict.Accessors",
-    "SelectList.Accessors"
+    "List.Accessors",
+    "SelectList.Accessors",
+    "Maybe.Accessors",
+    "Result.Accessors",
+    "SelectList.Accessors",
+    "Tuple.Accessors"
   ]
 }

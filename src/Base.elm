@@ -1,5 +1,5 @@
 module Base exposing
-    ( Optic, Setable
+    ( Optic, Lens
     , makeOneToOne, makeOneToN
     , is, name, over, set, view
     )
@@ -21,7 +21,7 @@ Accessors are built using these functions:
 -}
 
 
-{-| A `Relation super sub wrap` is a type describing how to interact with a
+{-| A `Optic value view over` is a type describing how to interact with a
 `sub` data when given a `super` data.
 
 The `wrap` exists because some types can't ensure that `get` will return a
@@ -48,21 +48,15 @@ internal (Optic i) =
     i
 
 
-type alias Getter value view over attr attrOver =
-    Optic attr attr attrOver -> Optic value view over
-
-
-{-| Type of a composition of accessors that `set` can be called with.
--}
-type alias Setable value view over attrOver =
-    Optic view view attrOver -> Optic value view over
+type alias Lens value attr view =
+    Optic attr view attr -> Optic value view value
 
 
 {-| This exposes a description field that's necessary for use with the name function
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    foo : Relation field sub wrap -> Relation { rec | foo : field } sub wrap
+    foo : Optic attr attrView attrOver -> Optic { rec | foo : attr } view over
     foo =
         makeOneToOne
             ".foo"
@@ -72,8 +66,6 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToOne :
     String
-    -- -> (value -> view)
-    -- -> ((view -> attrOver) -> value -> over)
     -> (value -> attr)
     -> ((attr -> attrOver) -> (value -> over))
     -> (Optic attr attrView attrOver -> Optic value attrView over)
@@ -87,7 +79,7 @@ makeOneToOne n viewSuper overSuper =
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
+    each : Optic attr view over -> Optic (List attr) view (List over)
     each =
         makeOneToN "[]"
             List.map
@@ -98,7 +90,6 @@ makeOneToN :
     String
     -> ((attr -> attrView) -> (value -> view))
     -> ((attr -> attrOver) -> (value -> over))
-    -- What is reachable here?
     -> Optic attr attrView attrOver
     -> Optic value view over
 makeOneToN n superView superOver (Optic sub) =
@@ -124,7 +115,10 @@ get (foo << bar) myRecord
 ```
 
 -}
-view : Getter value view over attr attrOver -> value -> view
+view :
+    (Optic attr attr attrOver -> Optic value view over)
+    -> value
+    -> view
 view accessor =
     (Optic
         { view = identity
@@ -156,7 +150,7 @@ view accessor =
 
 -}
 is :
-    Getter value (Maybe view) over attr attrOver
+    (Optic attr attr attrOver -> Optic value (Maybe view) over)
     -> value
     -> Bool
 is prism sup =
@@ -164,8 +158,7 @@ is prism sup =
 
 
 set :
-    -- Setable value view over attrOver
-    (Optic attr attr attrOver -> Optic value view over)
+    (Optic attr attrView attrOver -> Optic value view over)
     -> attrOver
     -> (value -> over)
 set accessor attr =
@@ -180,13 +173,13 @@ set accessor attr =
 
 
 over :
-    (Optic attr attr attrOver -> Optic value view over)
+    (Optic attr attrView attrOver -> Optic value view over)
     -> (attr -> attrOver)
     -> value
     -> over
 over accessor change =
     (Optic
-        { view = identity
+        { view = \_ -> void "`get` should never be called when `set` is executed"
         , over = change
         , name = ""
         }
@@ -197,17 +190,14 @@ over accessor change =
 
 name : (Optic attr attrView attrOver -> Optic value valueView valueOver) -> String
 name accessor =
-    let
-        (Optic relation) =
-            accessor
-                (Optic
-                    { view = \_ -> void "`get` should never be called when `name` is executed"
-                    , over = \_ -> void "`over` should never be called when `name` is executed"
-                    , name = ""
-                    }
-                )
-    in
-    relation.name
+    (Optic
+        { view = \_ -> void "`get` should never be called when `name` is executed"
+        , over = \_ -> void "`over` should never be called when `name` is executed"
+        , name = ""
+        }
+        |> accessor
+        |> internal
+    ).name
 
 
 

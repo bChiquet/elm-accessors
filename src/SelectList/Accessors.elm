@@ -6,7 +6,7 @@ module SelectList.Accessors exposing (each, each_, selected)
 
 -}
 
-import Base exposing (Optic)
+import Base exposing (Lens, Optic)
 import SelectList exposing (SelectList)
 
 
@@ -29,7 +29,7 @@ import SelectList exposing (SelectList)
     --> { foo = SelectList.fromLists [{ bar = 2 }] { bar = 3 } [{ bar = 4 }, { bar = 5 }] }
 
 -}
-each : Optic attribute built transformed -> Optic (SelectList attribute) built (SelectList transformed)
+each : Optic attr view over -> Optic (SelectList attr) (SelectList view) (SelectList over)
 each =
     Base.makeOneToN ":[_]" SelectList.map SelectList.map
 
@@ -67,7 +67,7 @@ each =
     --> {foo = SelectList.fromLists [{bar = 2}] {bar = 3} [{bar = 4}, {bar = 5}]}
 
 -}
-each_ : Optic ( Int, attribute ) reachable built -> Optic (SelectList attribute) reachable (SelectList built)
+each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (SelectList attr) (SelectList view) (SelectList over)
 each_ =
     Base.makeOneToN "[#]"
         (\fn ls ->
@@ -127,6 +127,6 @@ each_ =
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 3 }, { bar = 4 }] }
 
 -}
-selected : Optic attribute reachable built -> Optic (SelectList attribute) reachable built
+selected : Optic attr view attr -> Optic (SelectList attr) view (SelectList attr)
 selected =
     Base.makeOneToOne "[^]" SelectList.selected SelectList.updateSelected
