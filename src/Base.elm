@@ -1,5 +1,5 @@
 module Base exposing
-    ( Optic, Accessor, Lens, Lens_, Setable
+    ( Optic, Setable
     , makeOneToOne, makeOneToN
     , is, name, over, set, view
     )
@@ -32,61 +32,30 @@ Implementation: A relation is a banal record storing a `get` function and an
 `over` function.
 
 -}
-type Optic structure attribute wrap
-    = Optic
-        { view : structure -> wrap
-        , over : (attribute -> attribute) -> (structure -> structure)
-        , name : String
-        }
+type Optic structure view over
+    = Optic (Internal structure view over)
 
 
-type alias Accessor structure attribute get attrGet over attrOver =
-    Optic attribute attrGet attrOver -> Optic structure get over
+type alias Internal structure view over =
+    { view : structure -> view
+    , over : structure -> over
+    , name : String
+    }
 
 
-{-| This is an approximation of Van Laarhoven encoded Lenses which enable the
-the callers to use regular function composition to build more complex nested
-updates of more complicated types.
-
-But the original "Lens" type looked more like:
-
-    type alias Lens structure attribute =
-        { get : structure -> attribute
-        , set : structure -> attribute -> structure
-        }
-
-unfortunately these can't be composed without
-defining custom `composeLens`, `composeIso`, `composePrism`, style functions.
-
-whereas with this approach we're able to make use of Elm's built in `<<` operator
-to get/set/over deeply nested data.
-
--}
-type alias
-    Lens
-        -- Structure Before Action
-        structure
-        -- Structure After Action
-        transformed
-        -- Focus Before action
-        attribute
-        -- Focus After action
-        built
-    =
-    Optic attribute built transformed
-    -> Optic structure built transformed
+internal : Optic structure view over -> Internal structure view over
+internal (Optic i) =
+    i
 
 
-{-| Simplified version of Lens but seems to break type inference for more complicated compositions.
--}
-type alias Lens_ structure attribute =
-    Lens structure attribute attribute attribute
+type alias Getter value view over attr attrOver =
+    Optic attr attr attrOver -> Optic value view over
 
 
 {-| Type of a composition of accessors that `set` can be called with.
 -}
-type alias Setable structure transformed attribute built =
-    Optic attribute attribute built -> Optic structure attribute transformed
+type alias Setable value view over attrOver =
+    Optic view view attrOver -> Optic value view over
 
 
 {-| This exposes a description field that's necessary for use with the name function
@@ -103,15 +72,15 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToOne :
     String
-    -> (structure -> attribute)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -> (Optic attribute reachable wrap -> Optic structure reachable wrap)
-makeOneToOne n getter mapper (Optic sub) =
-    Optic
-        { view = \super -> sub.view (getter super)
-        , over = \change super -> mapper (sub.over change) super
-        , name = n ++ sub.name
-        }
+    -- -> (value -> view)
+    -- -> ((view -> attrOver) -> value -> over)
+    -> (value -> attr)
+    -> ((attr -> attrOver) -> (value -> over))
+    -> (Optic attr attrView attrOver -> Optic value attrView over)
+makeOneToOne n viewSuper overSuper =
+    makeOneToN n
+        (\viewAttr -> viewSuper >> viewAttr)
+        overSuper
 
 
 {-| This exposes a description field that's necessary for use with the name function
@@ -127,15 +96,15 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 -}
 makeOneToN :
     String
-    -> ((attribute -> built) -> structure -> transformed)
-    -> ((attribute -> attribute) -> structure -> structure)
+    -> ((attr -> attrView) -> (value -> view))
+    -> ((attr -> attrOver) -> (value -> over))
     -- What is reachable here?
-    -> Optic attribute reachable built
-    -> Optic structure reachable transformed
-makeOneToN n getter mapper (Optic sub) =
+    -> Optic attr attrView attrOver
+    -> Optic value view over
+makeOneToN n superView superOver (Optic sub) =
     Optic
-        { view = \super -> getter sub.view super
-        , over = \change super -> mapper (sub.over change) super
+        { view = superView sub.view
+        , over = superOver sub.over
         , name = n ++ sub.name
         }
 
@@ -155,22 +124,16 @@ get (foo << bar) myRecord
 ```
 
 -}
-view :
-    (Optic attribute built attribute -> Optic structure reachable transformed)
-    -> structure
-    -> transformed
-view accessor s =
-    let
-        (Optic relation) =
-            accessor
-                (Optic
-                    { view = identity
-                    , over = \_ -> void "`over` should never be called from `get`"
-                    , name = ""
-                    }
-                )
-    in
-    relation.view s
+view : Getter value view over attr attrOver -> value -> view
+view accessor =
+    (Optic
+        { view = identity
+        , over = \_ -> void "`over` should never be called from `get`"
+        , name = ""
+        }
+        |> accessor
+        |> internal
+    ).view
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
@@ -193,52 +156,46 @@ view accessor s =
 
 -}
 is :
-    (Optic attribute built attribute -> Optic structure reachable (Maybe transformed))
-    -> structure
+    Getter value (Maybe view) over attr attrOver
+    -> value
     -> Bool
 is prism sup =
     view prism sup /= Nothing
 
 
 set :
-    Setable structure transformed attribute built
-    -> attribute
-    -> structure
-    -> structure
-set accessor value s =
-    let
-        (Optic relation) =
-            accessor
-                (Optic
-                    { view = \_ -> void "`get` should never be called when `set` is executed"
-                    , over = identity
-                    , name = ""
-                    }
-                )
-    in
-    relation.over (\_ -> value) s
+    -- Setable value view over attrOver
+    (Optic attr attr attrOver -> Optic value view over)
+    -> attrOver
+    -> (value -> over)
+set accessor attr =
+    (Optic
+        { view = \_ -> void "`get` should never be called when `set` is executed"
+        , over = always attr
+        , name = ""
+        }
+        |> accessor
+        |> internal
+    ).over
 
 
 over :
-    (Optic attribute attribute built -> Optic structure attribute transformed)
-    -> (attribute -> attribute)
-    -> structure
-    -> structure
-over accessor change s =
-    let
-        (Optic relation) =
-            accessor
-                (Optic
-                    { view = \_ -> void "`get` should never be called when `over` is executed"
-                    , over = identity
-                    , name = ""
-                    }
-                )
-    in
-    relation.over change s
+    (Optic attr attr attrOver -> Optic value view over)
+    -> (attr -> attrOver)
+    -> value
+    -> over
+over accessor change =
+    (Optic
+        { view = identity
+        , over = change
+        , name = ""
+        }
+        |> accessor
+        |> internal
+    ).over
 
 
-name : Accessor a b c d e f -> String
+name : (Optic attr attrView attrOver -> Optic value valueView valueOver) -> String
 name accessor =
     let
         (Optic relation) =
