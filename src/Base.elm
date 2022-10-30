@@ -32,13 +32,13 @@ Implementation: A relation is a banal record storing a `get` function and an
 `over` function.
 
 -}
-type Optic structure view over
-    = Optic (Internal structure view over)
+type Optic value view over
+    = Optic (Internal value view over)
 
 
-type alias Internal structure view over =
-    { view : structure -> view
-    , over : structure -> over
+type alias Internal value view over =
+    { view : value -> view
+    , over : value -> over
     , name : String
     }
 
@@ -93,10 +93,10 @@ makeOneToN :
     -> ((attr -> attrOver) -> (value -> over))
     -> Optic attr attrView attrOver
     -> Optic value view over
-makeOneToN n superView superOver (Optic sub) =
+makeOneToN n viewAttr overAttr (Optic sub) =
     Optic
-        { view = superView sub.view
-        , over = superOver sub.over
+        { view = viewAttr sub.view
+        , over = overAttr sub.over
         , name = n ++ sub.name
         }
 
