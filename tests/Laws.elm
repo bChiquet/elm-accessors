@@ -155,7 +155,7 @@ isLens l fzr valFn val =
 
 
 setter_id l s =
-    A.over l identity s == s
+    A.map l identity s == s
 
 
 
@@ -168,7 +168,7 @@ setter_id l s =
 
 
 setter_composition l s f g =
-    A.over l f (A.over l g s) == A.over l (f << g) s
+    A.map l f (A.map l g s) == A.map l (f << g) s
 
 
 

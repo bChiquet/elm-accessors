@@ -13,7 +13,7 @@ import Maybe.Accessors as Maybe
 
 {-| This accessor combinator lets you access values inside Array.
 
-    import Accessors exposing (get, over)
+    import Accessors exposing (get, map)
     import Array exposing (Array)
     import Array.Accessors as Array
     import Lens as L
@@ -27,7 +27,7 @@ import Maybe.Accessors as Maybe
     get (L.foo << Array.each << L.bar) arrayRecord
     --> Array.fromList [2, 3, 4]
 
-    over (L.foo << Array.each << L.bar) ((+) 1) arrayRecord
+    map (L.foo << Array.each << L.bar) ((+) 1) arrayRecord
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -38,7 +38,7 @@ each =
 
 {-| This accessor lets you traverse a list including the index of each element
 
-    import Accessors exposing (get, over, snd)
+    import Accessors exposing (get, map, snd)
     import Array exposing (Array)
     import Array.Accessors as Array
     import Lens as L
@@ -61,13 +61,13 @@ each =
     get (L.foo << Array.each_) arrayRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})] |> Array.fromList
 
-    over (L.foo << Array.each_) multiplyIfGTOne arrayRecord
+    map (L.foo << Array.each_) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
     get (L.foo << Array.each_ << snd << L.bar) arrayRecord
     --> [2, 3, 4] |> Array.fromList
 
-    over (L.foo << Array.each_ << snd << L.bar) ((+) 1) arrayRecord
+    map (L.foo << Array.each_ << snd << L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}

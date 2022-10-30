@@ -25,7 +25,7 @@ import SelectList exposing (SelectList)
     get (L.foo << SL.each << L.bar) listRecord
     --> SelectList.fromLists [1] 2 [3, 4]
 
-    over (L.foo << SL.each << L.bar) ((+) 1) listRecord
+    map (L.foo << SL.each << L.bar) ((+) 1) listRecord
     --> { foo = SelectList.fromLists [{ bar = 2 }] { bar = 3 } [{ bar = 4 }, { bar = 5 }] }
 
 -}
@@ -57,13 +57,13 @@ each =
     get (L.foo << SL.each_) listRecord
     --> SelectList.fromLists [(0, {bar = 1})] (1, {bar = 2}) [(2, {bar = 3}), (3, {bar = 4})]
 
-    over (L.foo << SL.each_) multiplyIfGTOne listRecord
+    map (L.foo << SL.each_) multiplyIfGTOne listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
 
     get (L.foo << SL.each_ << snd << L.bar) listRecord
     --> SelectList.fromLists [1] 2 [3, 4]
 
-    over (L.foo << SL.each_ << snd << L.bar) ((+) 1) listRecord
+    map (L.foo << SL.each_ << snd << L.bar) ((+) 1) listRecord
     --> {foo = SelectList.fromLists [{bar = 2}] {bar = 3} [{bar = 4}, {bar = 5}]}
 
 -}
@@ -123,7 +123,7 @@ each_ =
     set (L.foo << SL.selected << L.bar) 37 listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 37 } [{ bar = 3 }, { bar = 4 }] }
 
-    over (L.foo << SL.selected << L.bar) ((*) 10) listRecord
+    map (L.foo << SL.selected << L.bar) ((*) 10) listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 3 }, { bar = 4 }] }
 
 -}

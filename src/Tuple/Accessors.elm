@@ -5,19 +5,19 @@ import Base exposing (Optic)
 
 {-| Lens over the first component of a Tuple
 
-    import Base exposing (view, set, over)
+    import Base exposing (get, set, map)
     import Tuple.Accessors as Tuple
 
     charging : (String, Int)
     charging = ("It's over", 1)
 
-    view Tuple.fst charging
+    get Tuple.fst charging
     --> "It's over"
 
     set Tuple.fst "It's over" charging
     --> ("It's over", 1)
 
-    over Tuple.fst (\s -> String.toUpper s ++ "!!!") charging
+    map Tuple.fst (\s -> String.toUpper s ++ "!!!") charging
     --> ("IT'S OVER!!!", 1)
 
 -}
@@ -28,13 +28,13 @@ fst =
 
 {-|
 
-    import Base exposing (view, set, over)
+    import Base exposing (get, set, map)
     import Tuple.Accessors as Tuple
 
     meh : (String, Int)
     meh = ("It's over", 1)
 
-    view Tuple.snd meh
+    get Tuple.snd meh
     --> 1
 
     set Tuple.snd 1125 meh
@@ -42,8 +42,8 @@ fst =
 
     meh
         |> set Tuple.snd 1125
-        |> over Tuple.fst (\s -> String.toUpper s ++ "!!!")
-        |> over Tuple.snd ((*) 8)
+        |> map Tuple.fst (\s -> String.toUpper s ++ "!!!")
+        |> map Tuple.snd ((*) 8)
     --> ("IT'S OVER!!!", 9000)
 
 -}

@@ -5,7 +5,7 @@ import Base exposing (Optic)
 
 {-| This accessor combinator lets you access values inside Maybe.
 
-    import Base exposing (view, over)
+    import Base exposing (get, map)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Maybe.Accessors as Maybe
@@ -16,16 +16,16 @@ import Base exposing (Optic)
                   , qux = Nothing
                   }
 
-    view (L.foo << Maybe.try << L.bar) maybeRecord
+    get (L.foo << Maybe.try << L.bar) maybeRecord
     --> Just 2
 
-    view (L.qux << Maybe.try << L.bar) maybeRecord
+    get (L.qux << Maybe.try << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << Maybe.try << L.bar) ((+) 1) maybeRecord
+    map (L.foo << Maybe.try << L.bar) ((+) 1) maybeRecord
     --> {foo = Just {bar = 3}, qux = Nothing}
 
-    over (L.qux << Maybe.try << L.bar) ((+) 1) maybeRecord
+    map (L.qux << Maybe.try << L.bar) ((+) 1) maybeRecord
     --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
@@ -41,7 +41,7 @@ try_ =
 
 {-| This accessor combinator lets you provide a default value for otherwise failable compositions
 
-    import Base exposing (view)
+    import Base exposing (get)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Maybe.Accessors as Maybe
@@ -51,17 +51,17 @@ try_ =
     dict =
         Dict.fromList [("foo", {bar = 2})]
 
-    view (Dict.at "foo" << Maybe.def {bar = 0}) dict
+    get (Dict.at "foo" << Maybe.def {bar = 0}) dict
     --> {bar = 2}
 
-    view (Dict.at "baz" << Maybe.def {bar = 0}) dict
+    get (Dict.at "baz" << Maybe.def {bar = 0}) dict
     --> {bar = 0}
 
     -- NOTE: The following do not compile :thinking:
-    --view (Dict.at "foo" << Maybe.try << L.bar << Maybe.def 0) dict
+    --get (Dict.at "foo" << Maybe.try << L.bar << Maybe.def 0) dict
     ----> 2
 
-    --view (Dict.at "baz" << Maybe.try << L.bar << Maybe.def 0) dict
+    --get (Dict.at "baz" << Maybe.try << L.bar << Maybe.def 0) dict
     ----> 0
 
 -}
@@ -74,7 +74,7 @@ def d =
 
 {-| This accessor combinator lets you provide a default value for otherwise failable compositions
 
-    import Base exposing (view)
+    import Base exposing (get)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Maybe.Accessors as Maybe
@@ -85,16 +85,16 @@ def d =
         Dict.fromList [("foo", {bar = 2})]
 
     -- NOTE: Use `def` for this.
-    --view (Dict.at "foo" << Maybe.or {bar = 0}) dict
+    --get (Dict.at "foo" << Maybe.or {bar = 0}) dict
     ----> {bar = 2}
 
-    --view (Dict.at "baz" << Maybe.or {bar = 0}) dict
+    --get (Dict.at "baz" << Maybe.or {bar = 0}) dict
     ----> {bar = 0}
 
-    view ((Dict.at "foo" << try << L.bar) |> Maybe.or 0) dict
+    get ((Dict.at "foo" << try << L.bar) |> Maybe.or 0) dict
     --> 2
 
-    view ((Dict.at "baz" << try << L.bar) |> Maybe.or 0) dict
+    get ((Dict.at "baz" << try << L.bar) |> Maybe.or 0) dict
     --> 0
 
 -}
@@ -106,4 +106,4 @@ or :
 or d l =
     Base.makeOneToOne "||"
         (Base.get l >> Maybe.withDefault d)
-        (Base.over l)
+        (Base.map l)

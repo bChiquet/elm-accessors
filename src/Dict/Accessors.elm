@@ -12,7 +12,7 @@ import Dict exposing (Dict)
 
 {-| values: This accessor lets you traverse a Dict including the index of each element
 
-    import Accessors exposing (get, over)
+    import Accessors exposing (get, map)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -27,13 +27,13 @@ import Dict exposing (Dict)
     get (L.foo << Dict.each) dictRecord
     --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList
 
-    over (L.foo << Dict.each << L.bar) ((*) 10) dictRecord
+    map (L.foo << Dict.each << L.bar) ((*) 10) dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 30}), ("c", {bar = 40})] |> Dict.fromList}
 
     get (L.foo << Dict.each << L.bar) dictRecord
     --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
 
-    over (L.foo << Dict.each << L.bar) ((+) 1) dictRecord
+    map (L.foo << Dict.each << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
@@ -46,7 +46,7 @@ each =
 
 {-| keyed: This accessor lets you traverse a Dict including the index of each element
 
-    import Accessors exposing (get, over, snd)
+    import Accessors exposing (get, map, snd)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -69,13 +69,13 @@ each =
     get (L.foo << Dict.each_) dictRecord
     --> [("a", ("a", {bar = 2})), ("b", ("b", {bar = 3})), ("c", ("c", {bar = 4}))] |> Dict.fromList
 
-    over (L.foo << Dict.each_) multiplyIfA dictRecord
+    map (L.foo << Dict.each_) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
     get (L.foo << Dict.each_ << snd << L.bar) dictRecord
     --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
 
-    over (L.foo << Dict.each_ << snd << L.bar) ((+) 1) dictRecord
+    map (L.foo << Dict.each_ << snd << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}

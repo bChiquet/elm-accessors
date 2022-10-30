@@ -210,7 +210,7 @@ suite =
                     let
                         updatedExample : { foo : number, bar : String, qux : Bool }
                         updatedExample =
-                            over L.bar (\w -> w ++ " lait") simpleRecord
+                            map L.bar (\w -> w ++ " lait") simpleRecord
                     in
                     updatedExample.bar
                         |> Expect.equal "Yop lait"
@@ -219,7 +219,7 @@ suite =
                     let
                         updatedExample : { foo : { foo : number, bar : String, qux : Bool } }
                         updatedExample =
-                            over (L.foo << L.qux) (\w -> not w) nestedRecord
+                            map (L.foo << L.qux) (\w -> not w) nestedRecord
                     in
                     updatedExample.foo.qux
                         |> Expect.equal True
@@ -228,7 +228,7 @@ suite =
                     let
                         updatedExample : { bar : List { foo : number, bar : String, qux : Bool } }
                         updatedExample =
-                            over (L.bar << List.each << L.foo) (\n -> n - 2) recordWithList
+                            map (L.bar << List.each << L.foo) (\n -> n - 2) recordWithList
                     in
                     get (L.bar << List.each << L.foo) updatedExample
                         |> Expect.equal [ 1, 3 ]
@@ -237,7 +237,7 @@ suite =
                     let
                         updatedExample : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
                         updatedExample =
-                            over (L.bar << Maybe.try << L.foo) (\n -> n + 3) maybeRecord
+                            map (L.bar << Maybe.try << L.foo) (\n -> n + 3) maybeRecord
                     in
                     get (L.bar << Maybe.try << L.foo) updatedExample
                         |> Expect.equal (Just 6)
@@ -246,7 +246,7 @@ suite =
                     let
                         -- updatedExample : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
                         updatedExample =
-                            over (L.foo << Maybe.try << L.bar) (\w -> w ++ "!") maybeRecord
+                            map (L.foo << Maybe.try << L.bar) (\w -> w ++ "!") maybeRecord
                     in
                     get (L.foo << Maybe.try << L.bar) updatedExample
                         |> Expect.equal Nothing
@@ -274,7 +274,7 @@ suite =
                         let
                             updatedRec : { foo : { foo : number, bar : String, qux : Bool } }
                             updatedRec =
-                                over (myFoo << myFoo) (\n -> n + 3) nestedRecord
+                                map (myFoo << myFoo) (\n -> n + 3) nestedRecord
                         in
                         updatedRec.foo.foo |> Expect.equal 6
                 ]
@@ -301,7 +301,7 @@ suite =
                         let
                             updatedExample : { bar : List { foo : number, bar : String, qux : Bool } }
                             updatedExample =
-                                over (L.bar << myOnEach << L.foo) (\n -> n - 2) recordWithList
+                                map (L.bar << myOnEach << L.foo) (\n -> n - 2) recordWithList
                         in
                         get (L.bar << List.each << L.foo) updatedExample
                             |> Expect.equal [ 1, 3 ]

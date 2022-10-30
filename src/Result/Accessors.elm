@@ -19,10 +19,10 @@ import Base exposing (Optic)
     get (L.qux << ok << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    map (L.foo << ok << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
 
-    over (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    map (L.qux << ok << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
@@ -47,10 +47,10 @@ onOk =
     get (L.qux << err) maybeRecord
     --> Just "Not an Int"
 
-    over (L.foo << err) String.toUpper maybeRecord
+    map (L.foo << err) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
-    over (L.qux << err) String.toUpper maybeRecord
+    map (L.qux << err) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}

@@ -1,7 +1,7 @@
 module Base exposing
     ( Optic
     , makeOneToOne, makeOneToN
-    , get, is, name, over, set
+    , get, has, map, name, set
     )
 
 {-|
@@ -134,27 +134,27 @@ get accessor =
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
 
     Just 1234
-        |> is try
+        |> has try
     --> True
 
     Nothing
-        |> is try
+        |> has try
     --> False
 
     ["Stuff", "things"]
-        |> is (at 2)
+        |> has (at 2)
     --> False
 
     ["Stuff", "things"]
-        |> is (at 0)
+        |> has (at 0)
     --> True
 
 -}
-is :
+has :
     (Optic attr attr attrOver -> Optic value (Maybe view) over)
     -> value
     -> Bool
-is prism sup =
+has prism sup =
     get prism sup /= Nothing
 
 
@@ -173,14 +173,14 @@ set accessor attr =
     ).over
 
 
-over :
+map :
     (Optic attr attrView attrOver -> Optic value view over)
     -> (attr -> attrOver)
     -> value
     -> over
-over accessor change =
+map accessor change =
     (Optic
-        { view = \_ -> void "`get` should never be called when `set` is executed"
+        { view = \_ -> void "`get` should never be called when `over` is executed"
         , over = change
         , name = ""
         }

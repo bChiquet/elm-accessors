@@ -13,7 +13,7 @@ import Maybe.Accessors as Maybe
 
 {-| This accessor combinator lets you access values inside List.
 
-    import Accessors exposing (get, over)
+    import Accessors exposing (get, map)
     import List.Accessors as List
     import Lens as L
 
@@ -27,7 +27,7 @@ import Maybe.Accessors as Maybe
     get (L.foo << List.each << L.bar) listRecord
     --> [2, 3, 4]
 
-    over (L.foo << List.each << L.bar) ((+) 1) listRecord
+    map (L.foo << List.each << L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -38,7 +38,7 @@ each =
 
 {-| This accessor lets you traverse a list including the index of each element
 
-    import Accessors exposing (get, over, snd)
+    import Accessors exposing (get, map, snd)
     import List.Accessors as List
     import Lens as L
 
@@ -60,13 +60,13 @@ each =
     get (L.foo << List.each_) listRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
 
-    over (L.foo << List.each_) multiplyIfGTOne listRecord
+    map (L.foo << List.each_) multiplyIfGTOne listRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
 
     get (L.foo << List.each_ << snd << L.bar) listRecord
     --> [2, 3, 4]
 
-    over (L.foo << List.each_ << snd << L.bar) ((+) 1) listRecord
+    map (L.foo << List.each_ << snd << L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}

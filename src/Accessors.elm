@@ -1,7 +1,7 @@
 module Accessors exposing
     ( Optic
     , makeOneToOne, makeOneToN
-    , get, set, over, name, is
+    , get, set, map, name, has
     , try, def, or, ok, err
     , values, keyed, key, keyI, key_
     , each, eachIdx, at
@@ -36,7 +36,7 @@ Accessors are built using these functions:
 Action functions are functions that take an accessor and let you perform a
 specific action on data using that accessor.
 
-@docs get, set, over, name, is
+@docs get, set, map, name, has
 
 
 ## Common Optics to mitigate `import` noise. Not everything is re-exported.
@@ -178,37 +178,37 @@ set =
     the function to the existing value.
 
 ```
-over (foo << qux) ((+) 1) myRecord
+map (foo << qux) ((+) 1) myRecord
 ```
 
 -}
-over : (Optic attr attrView attrOver -> Optic value view over) -> (attr -> attrOver) -> value -> over
-over =
-    Base.over
+map : (Optic attr attrView attrOver -> Optic value view over) -> (attr -> attrOver) -> value -> over
+map =
+    Base.map
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
 
     Just 1234
-        |> is try
+        |> has try
     --> True
 
     Nothing
-        |> is try
+        |> has try
     --> False
 
     ["Stuff", "things"]
-        |> is (at 2)
+        |> has (at 2)
     --> False
 
     ["Stuff", "things"]
-        |> is (at 0)
+        |> has (at 0)
     --> True
 
 -}
-is : (Optic attr attr attrOver -> Optic value (Maybe view) over) -> value -> Bool
-is =
-    Base.is
+has : (Optic attr attr attrOver -> Optic value (Maybe view) over) -> value -> Bool
+has =
+    Base.has
 
 
 
@@ -231,10 +231,10 @@ is =
     get (L.qux << try << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << try << L.bar) ((+) 1) maybeRecord
+    map (L.foo << try << L.bar) ((+) 1) maybeRecord
     --> {foo = Just {bar = 3}, qux = Nothing}
 
-    over (L.qux << try << L.bar) ((+) 1) maybeRecord
+    map (L.qux << try << L.bar) ((+) 1) maybeRecord
     --> {foo = Just {bar = 2}, qux = Nothing}
 
 -}
@@ -339,7 +339,7 @@ alias for [`Array.Accessors.each`](Array-Accessors#each)
     get (L.foo << every << L.bar) arrayRecord
     --> Array.fromList [2, 3, 4]
 
-    over (L.foo << every << L.bar) ((+) 1) arrayRecord
+    map (L.foo << every << L.bar) ((+) 1) arrayRecord
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -373,13 +373,13 @@ alias for [`Array.Accessors.each_`](Array-Accessors#each_)
     get (L.foo << everyIdx) arrayRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})] |> Array.fromList
 
-    over (L.foo << everyIdx) multiplyIfGTOne arrayRecord
+    map (L.foo << everyIdx) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
     get (L.foo << everyIdx << snd << L.bar) arrayRecord
     --> [2, 3, 4] |> Array.fromList
 
-    over (L.foo << everyIdx << snd << L.bar) ((+) 1) arrayRecord
+    map (L.foo << everyIdx << snd << L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
@@ -435,10 +435,10 @@ alias for [`Result.Accessors.onOk`](Result-Accessors#onOk)
     get (L.qux << ok << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    map (L.foo << ok << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
 
-    over (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    map (L.qux << ok << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
@@ -464,10 +464,10 @@ alias for [`Result.Accessors.onErr`](Result-Accessors#onErr)
     get (L.qux << err) maybeRecord
     --> Just "Not an Int"
 
-    over (L.foo << err) String.toUpper maybeRecord
+    map (L.foo << err) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
-    over (L.qux << err) String.toUpper maybeRecord
+    map (L.qux << err) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
@@ -493,13 +493,13 @@ alias for [`Dict.Accessors.each`](Dict-Accessors#each)
     get (L.foo << values) dictRecord
     --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList
 
-    over (L.foo << values << L.bar) ((*) 10) dictRecord
+    map (L.foo << values << L.bar) ((*) 10) dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 30}), ("c", {bar = 40})] |> Dict.fromList}
 
     get (L.foo << values << L.bar) dictRecord
     --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
 
-    over (L.foo << values << L.bar) ((+) 1) dictRecord
+    map (L.foo << values << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
@@ -533,13 +533,13 @@ alias for [`Dict.Accessors.each_`](Dict-Accessors#each_)
     get (L.foo << keyed) dictRecord
     --> [("a", ("a", {bar = 2})), ("b", ("b", {bar = 3})), ("c", ("c", {bar = 4}))] |> Dict.fromList
 
-    over (L.foo << keyed) multiplyIfA dictRecord
+    map (L.foo << keyed) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
     get (L.foo << keyed << snd << L.bar) dictRecord
     --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
 
-    over (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord
+    map (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
@@ -665,7 +665,7 @@ alias for [`Tuple.Accessors.fst`](Tuple-Accessors#fst)
     set fst "It's over" charging
     --> ("It's over", 1)
 
-    over fst (\s -> String.toUpper s ++ "!!!") charging
+    map fst (\s -> String.toUpper s ++ "!!!") charging
     --> ("IT'S OVER!!!", 1)
 
 -}
@@ -689,8 +689,8 @@ fst =
 
     meh
         |> set snd 1125
-        |> over fst (\s -> String.toUpper s ++ "!!!")
-        |> over snd ((*) 8)
+        |> map fst (\s -> String.toUpper s ++ "!!!")
+        |> map snd ((*) 8)
     --> ("IT'S OVER!!!", 9000)
 
 -}
