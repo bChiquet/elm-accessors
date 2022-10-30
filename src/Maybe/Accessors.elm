@@ -90,5 +90,5 @@ or :
     -> (Relation attribute other attribute -> Relation structure other attribute)
 or d l =
     Base.makeOneToOne "||"
-        (Base.get l >> Maybe.withDefault d)
+        (Base.view l >> Maybe.withDefault d)
         (Base.over l)

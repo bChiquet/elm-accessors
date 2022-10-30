@@ -75,8 +75,8 @@ type alias Relation structure attribute wrap =
 
 {-| The most general version of this type that everything else specializes
 -}
-type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable =
-    Base.Accessor dataBefore dataAfter attrBefore attrAfter reachable
+type alias Accessor structure attribute get attrGet over attrOver =
+    Base.Accessor structure attribute get attrGet over attrOver
 
 
 {-| This is an approximation of Van Laarhoven encoded Lenses which enable the
@@ -199,12 +199,12 @@ get :
     -> structure
     -> transformed
 get =
-    Base.get
+    Base.view
 
 
 {-| This function gives the name of the function as a string...
 -}
-name : Accessor a b c d e -> String
+name : Accessor a b c d e f -> String
 name =
     Base.name
 

@@ -1,7 +1,7 @@
 module Base exposing
     ( Relation, Accessor, Lens, Lens_, Setable
     , makeOneToOne, makeOneToN
-    , get, is, name, over, set
+    , is, name, over, set, view
     )
 
 {-|
@@ -21,8 +21,8 @@ Accessors are built using these functions:
 -}
 
 
-type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable =
-    Relation attrBefore reachable attrAfter -> Relation dataBefore reachable dataAfter
+type alias Accessor structure attribute get attrGet over attrOver =
+    Relation attribute attrGet attrOver -> Relation structure get over
 
 
 {-| A `Relation super sub wrap` is a type describing how to interact with a
@@ -38,7 +38,7 @@ Implementation: A relation is a banal record storing a `get` function and an
 -}
 type Relation structure attribute wrap
     = Relation
-        { get : structure -> wrap
+        { view : structure -> wrap
         , over : (attribute -> attribute) -> (structure -> structure)
         , name : String
         }
@@ -108,7 +108,7 @@ makeOneToOne :
     -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
 makeOneToOne n getter mapper (Relation sub) =
     Relation
-        { get = \super -> sub.get (getter super)
+        { view = \super -> sub.view (getter super)
         , over = \change super -> mapper (sub.over change) super
         , name = n ++ sub.name
         }
@@ -134,7 +134,7 @@ makeOneToN :
     -> Relation structure reachable transformed
 makeOneToN n getter mapper (Relation sub) =
     Relation
-        { get = \super -> getter sub.get super
+        { view = \super -> getter sub.view super
         , over = \change super -> mapper (sub.over change) super
         , name = n ++ sub.name
         }
@@ -155,22 +155,22 @@ get (foo << bar) myRecord
 ```
 
 -}
-get :
+view :
     (Relation attribute built attribute -> Relation structure reachable transformed)
     -> structure
     -> transformed
-get accessor s =
+view accessor s =
     let
         (Relation relation) =
             accessor
                 (Relation
-                    { get = identity
+                    { view = identity
                     , over = \_ -> void "`over` should never be called from `get`"
                     , name = ""
                     }
                 )
     in
-    relation.get s
+    relation.view s
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
@@ -197,7 +197,7 @@ is :
     -> structure
     -> Bool
 is prism sup =
-    get prism sup /= Nothing
+    view prism sup /= Nothing
 
 
 set :
@@ -210,7 +210,7 @@ set accessor value s =
         (Relation relation) =
             accessor
                 (Relation
-                    { get = \_ -> void "`get` should never be called when `set` is executed"
+                    { view = \_ -> void "`get` should never be called when `set` is executed"
                     , over = identity
                     , name = ""
                     }
@@ -229,7 +229,7 @@ over accessor change s =
         (Relation relation) =
             accessor
                 (Relation
-                    { get = \_ -> void "`get` should never be called when `over` is executed"
+                    { view = \_ -> void "`get` should never be called when `over` is executed"
                     , over = identity
                     , name = ""
                     }
@@ -238,13 +238,13 @@ over accessor change s =
     relation.over change s
 
 
-name : Accessor a b c d e -> String
+name : Accessor a b c d e f -> String
 name accessor =
     let
         (Relation relation) =
             accessor
                 (Relation
-                    { get = \_ -> void "`get` should never be called when `name` is executed"
+                    { view = \_ -> void "`get` should never be called when `name` is executed"
                     , over = \_ -> void "`over` should never be called when `name` is executed"
                     , name = ""
                     }
