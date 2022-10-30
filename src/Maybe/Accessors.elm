@@ -1,4 +1,4 @@
-module Maybe.Accessors exposing (def, or, try)
+module Maybe.Accessors exposing (def, or, try, try_)
 
 import Base exposing (Optic)
 
@@ -32,6 +32,11 @@ import Base exposing (Optic)
 try : Optic attr view over -> Optic (Maybe attr) (Maybe view) (Maybe over)
 try =
     Base.makeOneToN "?" Maybe.map Maybe.map
+
+
+try_ : Optic attr (Maybe view) (Maybe over) -> Optic (Maybe attr) (Maybe view) (Maybe over)
+try_ =
+    Base.makeOneToN "?" Maybe.andThen Maybe.andThen
 
 
 {-| This accessor combinator lets you provide a default value for otherwise failable compositions
@@ -100,5 +105,5 @@ or :
     -> Optic value attrView over
 or d l =
     Base.makeOneToOne "||"
-        (Base.view l >> Maybe.withDefault d)
+        (Base.get l >> Maybe.withDefault d)
         (Base.over l)

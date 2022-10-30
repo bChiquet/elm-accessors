@@ -1,7 +1,7 @@
 module Base exposing
-    ( Optic, Lens
+    ( Optic
     , makeOneToOne, makeOneToN
-    , is, name, over, set, view
+    , get, is, name, over, set
     )
 
 {-|
@@ -9,7 +9,7 @@ module Base exposing
 
 # Optics
 
-@docs Optic, Accessor, Lens, Lens_, Setable
+@docs Optic
 
 
 # Build your own accessors
@@ -48,8 +48,9 @@ internal (Optic i) =
     i
 
 
-type alias Lens value attr view =
-    Optic attr view attr -> Optic value view value
+
+-- type alias Lens value attr view =
+--     Optic attr view attr -> Optic value view value
 
 
 {-| This exposes a description field that's necessary for use with the name function
@@ -115,11 +116,11 @@ get (foo << bar) myRecord
 ```
 
 -}
-view :
+get :
     (Optic attr attr attrOver -> Optic value view over)
     -> value
     -> view
-view accessor =
+get accessor =
     (Optic
         { view = identity
         , over = \_ -> void "`over` should never be called from `get`"
@@ -154,7 +155,7 @@ is :
     -> value
     -> Bool
 is prism sup =
-    view prism sup /= Nothing
+    get prism sup /= Nothing
 
 
 set :

@@ -1,5 +1,5 @@
 module Accessors exposing
-    ( Optic, Lens
+    ( Optic
     , makeOneToOne, makeOneToN
     , get, set, over, name, is
     , try, def, or, ok, err
@@ -70,31 +70,6 @@ type alias Optic value view over =
 
 
 -- Type Aliases
-
-
-{-| This is an approximation of Van Laarhoven encoded Lenses which enable the
-the callers to use regular function composition to build more complex nested
-updates of more complicated types.
-
-But the original "Lens" type looked more like:
-
-    type alias Lens structure attribute =
-        { get : structure -> attribute
-        , set : structure -> attribute -> structure
-        }
-
-unfortunately these can't be composed without
-defining custom `composeLens`, `composeIso`, `composePrism`, style functions.
-
-whereas with this approach we're able to make use of Elm's built in `<<` operator
-to get/set/over deeply nested data.
-
--}
-type alias Lens value view over =
-    Base.Lens value view over
-
-
-
 -- Constructors
 
 
@@ -161,7 +136,7 @@ get :
     -> value
     -> view
 get =
-    Base.view
+    Base.get
 
 
 {-| This function gives the name of the function as a string...

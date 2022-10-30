@@ -1,6 +1,6 @@
 module Lens exposing (..)
 
-import Base exposing (Lens, makeOneToOne)
+import Base exposing (makeOneToOne)
 
 
 

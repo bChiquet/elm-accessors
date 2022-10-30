@@ -6,7 +6,7 @@ module SelectList.Accessors exposing (each, each_, selected)
 
 -}
 
-import Base exposing (Lens, Optic)
+import Base exposing (Optic)
 import SelectList exposing (SelectList)
 
 

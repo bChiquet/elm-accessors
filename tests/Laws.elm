@@ -1,6 +1,6 @@
 module Laws exposing (..)
 
-import Accessors as A exposing (Lens)
+import Accessors as A
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Expect exposing (Expectation)
