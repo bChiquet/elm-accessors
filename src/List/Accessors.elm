@@ -33,7 +33,7 @@ import Maybe.Accessors as Maybe
 -}
 each : Optic attr view over -> Optic (List attr) (List view) (List over)
 each =
-    Base.makeOneToN ":[]" List.map List.map
+    Base.traversal ":[]" List.map List.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -72,7 +72,7 @@ each =
 -}
 each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (List attr) (List view) (List over)
 each_ =
-    Base.makeOneToN "#[]"
+    Base.traversal "#[]"
         (\fn ->
             List.indexedMap
                 (\idx -> Tuple.pair idx >> fn)
@@ -110,7 +110,7 @@ each_ =
 -}
 at : Int -> Optic attr view attr -> Optic (List attr) (Maybe view) (List attr)
 at idx =
-    Base.makeOneToOne ("(" ++ String.fromInt idx ++ ")")
+    Base.lens ("(" ++ String.fromInt idx ++ ")")
         (if idx < 0 then
             always Nothing
 
@@ -164,7 +164,7 @@ id :
     -> Optic { attr | id : Int } view { attr | id : Int }
     -> Optic (List { attr | id : Int }) (Maybe view) (List { attr | id : Int })
 id key =
-    Base.makeOneToOne ("(" ++ String.fromInt key ++ ")")
+    Base.lens ("(" ++ String.fromInt key ++ ")")
         (if key < 0 then
             always Nothing
 

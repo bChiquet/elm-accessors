@@ -92,7 +92,7 @@ makeOneToOne :
     -> Optic attr attrView attrOver
     -> Optic value attrView over
 makeOneToOne =
-    Base.makeOneToOne
+    Base.lens
 
 
 {-| This exposes a description field that's necessary for use with the name function
@@ -113,7 +113,7 @@ makeOneToN :
     -> Optic attr attrView attrOver
     -> Optic value view over
 makeOneToN =
-    Base.makeOneToN
+    Base.traversal
 
 
 

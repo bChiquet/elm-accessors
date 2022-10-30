@@ -39,7 +39,7 @@ import Dict exposing (Dict)
 -}
 each : Optic attr view over -> Optic (Dict key attr) (Dict key view) (Dict key over)
 each =
-    Base.makeOneToN "{_}"
+    Base.traversal "{_}"
         (\fn -> Dict.map (\_ -> fn))
         (\fn -> Dict.map (\_ -> fn))
 
@@ -81,7 +81,7 @@ each =
 -}
 each_ : Optic ( key, attr ) view ( ignored, over ) -> Optic (Dict key attr) (Dict key view) (Dict key over)
 each_ =
-    Base.makeOneToN "{_}"
+    Base.traversal "{_}"
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn))
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn >> Tuple.second))
 
@@ -190,4 +190,4 @@ at_ :
     -> Optic (Maybe attr) view (Maybe attr)
     -> Optic (Dict comparable attr) view (Dict comparable attr)
 at_ toS k =
-    Base.makeOneToOne ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)
+    Base.lens ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)

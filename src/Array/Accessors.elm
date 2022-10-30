@@ -33,7 +33,7 @@ import Maybe.Accessors as Maybe
 -}
 each : Optic attr view over -> Optic (Array attr) (Array view) (Array over)
 each =
-    Base.makeOneToN "[]" Array.map Array.map
+    Base.traversal "[]" Array.map Array.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -73,7 +73,7 @@ each =
 -}
 each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (Array attr) (Array view) (Array over)
 each_ =
-    Base.makeOneToN "#[]"
+    Base.traversal "#[]"
         (\fn ->
             Array.indexedMap
                 (\idx -> Tuple.pair idx >> fn)
@@ -114,7 +114,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 at : Int -> Optic over view over -> Optic (Array over) (Maybe view) (Array over)
 at idx =
-    Base.makeOneToOne
+    Base.lens
         ("[" ++ String.fromInt idx ++ "]")
         (Array.get idx)
         (\fn ->
@@ -174,7 +174,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
 -}
 id : Int -> Optic { attr | id : Int } view { attr | id : Int } -> Optic (Array { attr | id : Int }) (Maybe view) (Array { attr | id : Int })
 id key =
-    Base.makeOneToOne
+    Base.lens
         ("[" ++ String.fromInt key ++ "]")
         (if key < 0 then
             always Nothing

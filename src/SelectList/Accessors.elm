@@ -31,7 +31,7 @@ import SelectList exposing (SelectList)
 -}
 each : Optic attr view over -> Optic (SelectList attr) (SelectList view) (SelectList over)
 each =
-    Base.makeOneToN ":[_]" SelectList.map SelectList.map
+    Base.traversal ":[_]" SelectList.map SelectList.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -69,7 +69,7 @@ each =
 -}
 each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (SelectList attr) (SelectList view) (SelectList over)
 each_ =
-    Base.makeOneToN "[#]"
+    Base.traversal "[#]"
         (\fn ls ->
             let
                 ( before, current, after ) =
@@ -129,4 +129,4 @@ each_ =
 -}
 selected : Optic attr view attr -> Optic (SelectList attr) view (SelectList attr)
 selected =
-    Base.makeOneToOne "[^]" SelectList.selected SelectList.updateSelected
+    Base.lens "[^]" SelectList.selected SelectList.updateSelected

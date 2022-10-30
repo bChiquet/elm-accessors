@@ -1,6 +1,6 @@
 module Base exposing
     ( Optic
-    , makeOneToOne, makeOneToN
+    , traversal, lens, prism
     , get, has, map, name, set
     )
 
@@ -16,7 +16,12 @@ module Base exposing
 
 Accessors are built using these functions:
 
-@docs makeOneToOne, makeOneToN
+@docs traversal, lens, prism
+
+
+# Actions
+
+@docs get, has, map, name, set
 
 -}
 
@@ -65,14 +70,27 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
             (\change rec -> { rec | foo = change rec.foo })
 
 -}
-makeOneToOne :
+lens :
     String
     -> (value -> attr)
     -> ((attr -> attrOver) -> (value -> over))
     -> (Optic attr attrView attrOver -> Optic value attrView over)
-makeOneToOne n viewSuper overSuper =
-    makeOneToN n
+lens n viewSuper overSuper =
+    traversal n
         (\viewAttr -> viewSuper >> viewAttr)
+        overSuper
+
+
+prism :
+    String
+    -> (value -> Maybe.Maybe attr)
+    -> ((attr -> attrOver) -> (value -> over))
+    -> (Optic attr view attrOver -> Optic value (Maybe view) over)
+prism n viewSuper overSuper =
+    traversal n
+        (\viewAttr ->
+            viewSuper >> Maybe.map viewAttr
+        )
         overSuper
 
 
@@ -87,13 +105,13 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
             List.map
 
 -}
-makeOneToN :
+traversal :
     String
     -> ((attr -> attrView) -> (value -> view))
     -> ((attr -> attrOver) -> (value -> over))
     -> Optic attr attrView attrOver
     -> Optic value view over
-makeOneToN n viewAttr overAttr (Optic sub) =
+traversal n viewAttr overAttr (Optic sub) =
     Optic
         { view = viewAttr sub.view
         , over = overAttr sub.over
@@ -154,8 +172,8 @@ has :
     (Optic attr attr attrOver -> Optic value (Maybe view) over)
     -> value
     -> Bool
-has prism sup =
-    get prism sup /= Nothing
+has prism_ sup =
+    get prism_ sup /= Nothing
 
 
 set :

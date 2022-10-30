@@ -1,6 +1,6 @@
 module Lens exposing (..)
 
-import Base exposing (makeOneToOne)
+import Base exposing (lens)
 
 
 
@@ -9,7 +9,7 @@ import Base exposing (makeOneToOne)
 
 
 bar =
-    makeOneToOne ".bar" .bar (\fn rec -> { rec | bar = fn rec.bar })
+    lens ".bar" .bar (\fn rec -> { rec | bar = fn rec.bar })
 
 
 
@@ -18,7 +18,7 @@ bar =
 
 
 foo =
-    makeOneToOne ".foo" .foo (\fn rec -> { rec | foo = fn rec.foo })
+    lens ".foo" .foo (\fn rec -> { rec | foo = fn rec.foo })
 
 
 
@@ -27,7 +27,7 @@ foo =
 
 
 qux =
-    makeOneToOne ".qux" .qux (\fn rec -> { rec | qux = fn rec.qux })
+    lens ".qux" .qux (\fn rec -> { rec | qux = fn rec.qux })
 
 
 {-| name : Lens { a | name : b } b { a | name : b }
@@ -40,7 +40,7 @@ qux =
 
 
 name =
-    makeOneToOne ".name" .name (\fn rec -> { rec | name = fn rec.name })
+    lens ".name" .name (\fn rec -> { rec | name = fn rec.name })
 
 
 
@@ -49,7 +49,7 @@ name =
 
 
 age =
-    makeOneToOne ".age" .age (\fn rec -> { rec | age = fn rec.age })
+    lens ".age" .age (\fn rec -> { rec | age = fn rec.age })
 
 
 
@@ -58,7 +58,7 @@ age =
 
 
 email =
-    makeOneToOne ".email" .email (\fn rec -> { rec | email = fn rec.email })
+    lens ".email" .email (\fn rec -> { rec | email = fn rec.email })
 
 
 
@@ -67,7 +67,7 @@ email =
 
 
 stuff =
-    makeOneToOne ".stuff" .stuff (\fn rec -> { rec | stuff = fn rec.stuff })
+    lens ".stuff" .stuff (\fn rec -> { rec | stuff = fn rec.stuff })
 
 
 
@@ -76,7 +76,7 @@ stuff =
 
 
 things =
-    makeOneToOne ".things" .things (\fn rec -> { rec | things = fn rec.things })
+    lens ".things" .things (\fn rec -> { rec | things = fn rec.things })
 
 
 
@@ -85,4 +85,4 @@ things =
 
 
 info =
-    makeOneToOne ".info" .info (\fn rec -> { rec | info = fn rec.info })
+    lens ".info" .info (\fn rec -> { rec | info = fn rec.info })

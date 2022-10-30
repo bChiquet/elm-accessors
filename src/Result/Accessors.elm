@@ -28,7 +28,7 @@ import Base exposing (Optic)
 -}
 onOk : Optic attr view over -> Optic (Result ignored attr) (Maybe view) (Result ignored over)
 onOk =
-    Base.makeOneToN "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
+    Base.traversal "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
 
 
 {-| This accessor lets you access values inside the Err variant of a Result.
@@ -65,4 +65,4 @@ onErr =
                 _ ->
                     Nothing
     in
-    Base.makeOneToN "!" getter Result.mapError
+    Base.traversal "!" getter Result.mapError

@@ -8,14 +8,14 @@ import TreePath exposing (TreePath)
 
 onLabel : Optic attr view attr -> Optic (Tree attr) view (Tree attr)
 onLabel =
-    Base.makeOneToOne "-label"
+    Base.lens "-label"
         Tree.label
         Tree.mapLabel
 
 
 each : Optic attr view over -> Optic (Tree attr) (Tree view) (Tree over)
 each =
-    Base.makeOneToN
+    Base.traversal
         "<>"
         Tree.map
         Tree.map
@@ -26,7 +26,7 @@ onPath :
     -> Optic (Tree attr) (Tree attr) (Tree attr)
     -> Optic (Tree attr) (Tree attr) (Tree attr)
 onPath path =
-    Base.makeOneToN
+    Base.traversal
         ("<" ++ String.join ", " (List.map String.fromInt path) ++ ">")
         (Tree.updateAt path)
         (Tree.updateAt path)

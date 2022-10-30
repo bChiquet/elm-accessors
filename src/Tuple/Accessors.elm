@@ -23,7 +23,7 @@ import Base exposing (Optic)
 -}
 fst : Optic attr view over -> Optic ( attr, ignored ) view ( over, ignored )
 fst =
-    Base.makeOneToOne "_1" Tuple.first Tuple.mapFirst
+    Base.lens "_1" Tuple.first Tuple.mapFirst
 
 
 {-|
@@ -49,4 +49,4 @@ fst =
 -}
 snd : Optic attr view over -> Optic ( ignored, attr ) view ( ignored, over )
 snd =
-    Base.makeOneToOne "_2" Tuple.second Tuple.mapSecond
+    Base.lens "_2" Tuple.second Tuple.mapSecond
