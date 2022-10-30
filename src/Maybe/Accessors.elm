@@ -4,6 +4,7 @@ import Base exposing (Optic)
 
 
 {-| This accessor combinator lets you access values inside Maybe.
+see [`try_`](Maybe-Accessors#try_) for a flattening lens.
 
     import Base exposing (get, map)
     import Dict exposing (Dict)
@@ -11,22 +12,22 @@ import Base exposing (Optic)
     import Maybe.Accessors as Maybe
     import Lens as L
 
-    maybeRecord : { foo : Maybe { bar : Int }, qux : Maybe { bar : Int } }
-    maybeRecord = { foo = Just { bar = 2 }
+    maybeRecord : { foo : Maybe { bar : Maybe {stuff : Maybe Int} }, qux : Maybe { bar : Maybe Int } }
+    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
                   , qux = Nothing
                   }
 
-    get (L.foo << Maybe.try << L.bar) maybeRecord
-    --> Just 2
+    get (L.foo << Maybe.try << L.bar << Maybe.try << L.stuff) maybeRecord
+    --> Just (Just (Just 2) )
 
     get (L.qux << Maybe.try << L.bar) maybeRecord
     --> Nothing
 
-    map (L.foo << Maybe.try << L.bar) ((+) 1) maybeRecord
-    --> {foo = Just {bar = 3}, qux = Nothing}
+    map (L.foo << Maybe.try << L.bar << Maybe.try << L.stuff << Maybe.try) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
 
-    map (L.qux << Maybe.try << L.bar) ((+) 1) maybeRecord
-    --> {foo = Just {bar = 2}, qux = Nothing}
+    map (L.qux << Maybe.try << L.bar << Maybe.try) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
 
 -}
 try : Optic attr view over -> Optic (Maybe attr) (Maybe view) (Maybe over)
@@ -34,6 +35,34 @@ try =
     Base.traversal "?" Maybe.map Maybe.map
 
 
+{-| This accessor combinator lets you access values inside Maybe.
+see [`try`](Maybe-Accessors#try) for a NON-flattening lens.
+
+    import Base exposing (get, map)
+    import Dict exposing (Dict)
+    import Dict.Accessors as Dict
+    import Maybe.Accessors as Maybe
+    import Lens as L
+
+    maybeRecord : { foo : Maybe { bar : Maybe {stuff : Maybe Int} }, qux : Maybe { bar : Maybe Int } }
+    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
+                  , qux = Nothing
+                  }
+
+
+    get (L.foo << Maybe.try_ << L.bar << Maybe.try_ << L.stuff) maybeRecord
+    --> Just 2
+
+    get (L.qux << Maybe.try_ << L.bar) maybeRecord
+    --> Nothing
+
+    map (L.foo << Maybe.try_ << L.bar << Maybe.try_ << L.stuff << Maybe.try_) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
+
+    map (L.qux << Maybe.try_ << L.bar << Maybe.try_) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
+
+-}
 try_ : Optic attr (Maybe view) over -> Optic (Maybe attr) (Maybe view) (Maybe over)
 try_ =
     Base.traversal "?" Maybe.andThen Maybe.map

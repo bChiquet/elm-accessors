@@ -2,7 +2,7 @@ module Accessors exposing
     ( Optic
     , makeOneToOne, makeOneToN
     , get, set, map, name, has
-    , try, def, or, ok, err
+    , try, try_, def, or, ok, err
     , values, keyed, key, keyI, key_
     , each, eachIdx, at
     , every, everyIdx, ix
@@ -41,7 +41,7 @@ specific action on data using that accessor.
 
 ## Common Optics to mitigate `import` noise. Not everything is re-exported.
 
-@docs try, def, or, ok, err
+@docs try, try_, def, or, ok, err
 @docs values, keyed, key, keyI, keyF, key_
 @docs each, eachIdx, at
 @docs every, everyIdx, ix
@@ -216,31 +216,61 @@ has =
 
 
 {-| This accessor combinator lets you access values inside Maybe.
+see [`try_`](Maybe-Accessors#try_) for a flattening lens.
 
     import Accessors exposing (..)
     import Lens as L
 
-    maybeRecord : { foo : Maybe { bar : Int }, qux : Maybe { bar : Int } }
-    maybeRecord = { foo = Just { bar = 2 }
+    maybeRecord : { foo : Maybe { bar : Maybe {stuff : Maybe Int} }, qux : Maybe { bar : Maybe Int } }
+    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
                   , qux = Nothing
                   }
 
-    get (L.foo << try << L.bar) maybeRecord
-    --> Just 2
+    get (L.foo << try << L.bar << try << L.stuff) maybeRecord
+    --> Just (Just (Just 2) )
 
     get (L.qux << try << L.bar) maybeRecord
     --> Nothing
 
-    map (L.foo << try << L.bar) ((+) 1) maybeRecord
-    --> {foo = Just {bar = 3}, qux = Nothing}
+    map (L.foo << try << L.bar << try << L.stuff << try) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
 
-    map (L.qux << try << L.bar) ((+) 1) maybeRecord
-    --> {foo = Just {bar = 2}, qux = Nothing}
+    map (L.qux << try << L.bar << try) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
 
 -}
 try : Optic attr view over -> Optic (Maybe attr) (Maybe view) (Maybe over)
 try =
     Maybe.try
+
+
+{-| This accessor combinator lets you access values inside Maybe.
+see [`try`](Maybe-Accessors#try) for a NON-flattening lens.
+
+    import Accessors exposing (..)
+    import Lens as L
+
+    maybeRecord : { foo : Maybe { bar : Maybe {stuff : Maybe Int} }, qux : Maybe { bar : Maybe Int } }
+    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
+                  , qux = Nothing
+                  }
+
+    get (L.foo << try_ << L.bar << try_ << L.stuff) maybeRecord
+    --> Just 2
+
+    get (L.qux << try_ << L.bar) maybeRecord
+    --> Nothing
+
+    map (L.foo << try_ << L.bar << try_ << L.stuff << try_) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
+
+    map (L.qux << try_ << L.bar << try_) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
+
+-}
+try_ : Optic attr (Maybe view) over -> Optic (Maybe attr) (Maybe view) (Maybe over)
+try_ =
+    Maybe.try_
 
 
 {-| This accessor combinator lets you provide a default value for otherwise failable compositions
