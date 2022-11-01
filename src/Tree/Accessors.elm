@@ -6,6 +6,14 @@ import Tree.Extra.Lue as Tree
 import TreePath exposing (TreePath)
 
 
+labelAt :
+    TreePath
+    -> Optic attr (Tree attr) attr
+    -> Optic (Tree attr) (Tree attr) (Tree attr)
+labelAt path =
+    onPath path << onLabel
+
+
 onLabel : Optic attr view attr -> Optic (Tree attr) view (Tree attr)
 onLabel =
     Base.lens "-label"
@@ -30,11 +38,3 @@ onPath path =
         ("<" ++ String.join ", " (List.map String.fromInt path) ++ ">")
         (Tree.updateAt path)
         (Tree.updateAt path)
-
-
-labelAt :
-    List Int
-    -> Optic attr (Tree attr) attr
-    -> Optic (Tree attr) (Tree attr) (Tree attr)
-labelAt path =
-    onPath path << onLabel

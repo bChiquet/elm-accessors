@@ -1,6 +1,7 @@
-module Result.Accessors exposing (onErr, onOk)
+module Result.Accessors exposing (err_, ok_)
 
-import Base exposing (Optic)
+import Base exposing (Optic, Prism)
+import Result exposing (Result(..))
 
 
 {-| This accessor lets you access values inside the Ok variant of a Result.
@@ -26,9 +27,9 @@ import Base exposing (Optic)
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
-onOk : Optic attr view over -> Optic (Result ignored attr) (Maybe view) (Result ignored over)
-onOk =
-    Base.traversal "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
+ok_ : Optic pr ls a b x y -> Prism pr (Result ignored a) (Result ignored b) x y
+ok_ =
+    Base.prism ".?[Ok]" Ok (unwrap (Err >> Err) Ok)
 
 
 {-| This accessor lets you access values inside the Err variant of a Result.
@@ -54,15 +55,16 @@ onOk =
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
-onErr : Optic attr view over -> Optic (Result attr ignored) (Maybe view) (Result over ignored)
-onErr =
-    let
-        getter fn res =
-            case res of
-                Err e ->
-                    Just (fn e)
+err_ : Optic pr ls a b x y -> Prism pr (Result a ignored) (Result b ignored) x y
+err_ =
+    Base.prism ".?[Err]" Err (unwrap Ok (Ok >> Err))
 
-                _ ->
-                    Nothing
-    in
-    Base.traversal "!" getter Result.mapError
+
+unwrap : (e -> x) -> (a -> x) -> Result e a -> x
+unwrap onE onA r =
+    case r of
+        Ok a ->
+            onA a
+
+        Err e ->
+            onE e

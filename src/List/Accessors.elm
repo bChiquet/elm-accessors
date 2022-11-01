@@ -1,4 +1,4 @@
-module List.Accessors exposing (each, each_, at, id)
+module List.Accessors exposing (each, at, id)
 
 {-| List.Accessors
 
@@ -6,9 +6,12 @@ module List.Accessors exposing (each, each_, at, id)
 
 -}
 
-import Base exposing (Optic)
-import Lens
-import Maybe.Accessors as Maybe
+import Base exposing (Optic(..), Prism, Traversal)
+import Tuple.Accessors as Tuple
+
+
+
+-- import Maybe.Accessors as Maybe
 
 
 {-| This accessor combinator lets you access values inside List.
@@ -31,9 +34,9 @@ import Maybe.Accessors as Maybe
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each : Optic attr view over -> Optic (List attr) (List view) (List over)
+each : Optic pr ls a b x y -> Traversal (List a) (List b) x y
 each =
-    Base.traversal ":[]" List.map List.map
+    Base.traversal ":[]" identity List.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -56,7 +59,6 @@ each =
         else
             (idx, rec)
 
-
     get (L.foo << List.each_) listRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
 
@@ -70,17 +72,16 @@ each =
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (List attr) (List view) (List over)
+
+
+
+-- each_ : Optic pr ls a ( Int, b ) x y -> Traversal (List a) (List b) x y
+
+
 each_ =
     Base.traversal "#[]"
-        (\fn ->
-            List.indexedMap
-                (\idx -> Tuple.pair idx >> fn)
-        )
-        (\fn ->
-            List.indexedMap
-                (\idx -> Tuple.pair idx >> fn >> Tuple.second)
-        )
+        Tuple.second
+        (\fn -> List.indexedMap (\idx -> Tuple.pair idx >> fn))
 
 
 {-| at: Structure Preserving accessor over List members.
@@ -108,30 +109,47 @@ each_ =
     --> list
 
 -}
-at : Int -> Optic attr view attr -> Optic (List attr) (Maybe view) (List attr)
-at idx =
-    Base.lens ("(" ++ String.fromInt idx ++ ")")
-        (if idx < 0 then
-            always Nothing
-
-         else
-            List.head << List.drop idx
-        )
+at : Int -> Optic pr ls a a x y -> Traversal (List a) (List a) x y
+at key =
+    Base.traversal ("[" ++ String.fromInt key ++ "]")
+        identity
         (\fn ->
-            -- NOTE: `<< try` at the end ensures we can't delete any existing keys
-            -- so `List.filterMap identity` should be safe
-            -- TODO: write this in terms of `foldr` to avoid double iteration.
             List.indexedMap
-                (\idx_ v ->
-                    if idx == idx_ then
-                        fn (Just v)
+                (\idx v ->
+                    if idx == key then
+                        fn v
 
                     else
-                        Just v
+                        v
                 )
-                >> List.filterMap identity
         )
-        << Maybe.try
+
+
+
+-- TODO: Add these back in the future maybe?
+-- {-| Everything except first n elements of the list.
+-- -}
+-- drop : Int -> Optic pr ls (List a) (List a) x y -> Traversal (List a) (List a) x y
+-- drop i =
+--     Base.traversal "drop" (List.drop i >> (\x -> [ x ])) <|
+--         \f lst ->
+--             List.take i lst ++ f (List.drop i lst)
+-- {-| List head.
+-- -}
+-- head : Optic pr ls a a x y -> Traversal (List a) (List a) x y
+-- head =
+--     cons << Tuple.fst
+-- {-| Match head/tail of a non-empty list.
+-- -}
+-- cons : Optic pr ls ( a, List a ) ( b, List b ) x y -> Prism pr (List a) (List b) x y
+-- cons =
+--     Base.prism ":" (uncurry (::)) <|
+--         \lst ->
+--             case lst of
+--                 x :: xs ->
+--                     Ok ( x, xs )
+--                 [] ->
+--                     Err []
 
 
 {-| id: Structure Preserving accessor over List members.
@@ -159,31 +177,45 @@ at idx =
     --> list
 
 -}
-id :
-    Int
-    -> Optic { attr | id : Int } view { attr | id : Int }
-    -> Optic (List { attr | id : Int }) (Maybe view) (List { attr | id : Int })
+id : Int -> Optic pr ls { a | id : Int } { a | id : Int } x y -> Traversal (List { a | id : Int }) (List { a | id : Int }) x y
 id key =
-    Base.lens ("(" ++ String.fromInt key ++ ")")
-        (if key < 0 then
-            always Nothing
-
-         else
-            List.filter (\v -> v.id == key)
-                >> List.head
-        )
+    Base.traversal ("(" ++ String.fromInt key ++ ")")
+        identity
         (\fn ->
-            -- NOTE: `<< try` at the end ensures we can't delete any existing keys
-            -- so `List.filterMap identity` should be safe
-            -- TODO: write this in terms of `foldr` to avoid double iteration.
             List.map
                 (\v ->
-                    if key == v.id then
-                        fn (Just v)
+                    if v.id == key then
+                        fn v
 
                     else
-                        Just v
+                        v
                 )
-                >> List.filterMap identity
         )
-        << Maybe.try
+
+
+
+--         (if key < 0 then
+--             always Nothing
+--          else
+--             List.filter (\v -> v.id == key)
+--                 >> List.head
+--         )
+--         (\fn ->
+--             -- NOTE: `<< try` at the end ensures we can't delete any existing keys
+--             -- so `List.filterMap identity` should be safe
+--             -- TODO: write this in terms of `foldr` to avoid double iteration.
+--             List.map
+--                 (\v ->
+--                     if key == v.id then
+--                         fn (Just v)
+--                     else
+--                         Just v
+--                 )
+--                 >> List.filterMap identity
+--         )
+--         << Maybe.try
+
+
+uncurry : (a -> b -> c) -> ( a, b ) -> c
+uncurry f ( a, b ) =
+    f a b

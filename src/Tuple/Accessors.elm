@@ -1,6 +1,6 @@
 module Tuple.Accessors exposing (fst, snd)
 
-import Base exposing (Optic)
+import Base exposing (Lens, Optic)
 
 
 {-| Lens over the first component of a Tuple
@@ -21,9 +21,9 @@ import Base exposing (Optic)
     --> ("IT'S OVER!!!", 1)
 
 -}
-fst : Optic attr view over -> Optic ( attr, ignored ) view ( over, ignored )
+fst : Optic pr ls a b x y -> Lens ls ( a, two ) ( b, two ) x y
 fst =
-    Base.lens "_1" Tuple.first Tuple.mapFirst
+    Base.lens ".1" Tuple.first (\( _, two ) a -> ( a, two ))
 
 
 {-|
@@ -47,6 +47,6 @@ fst =
     --> ("IT'S OVER!!!", 9000)
 
 -}
-snd : Optic attr view over -> Optic ( ignored, attr ) view ( ignored, over )
+snd : Optic pr ls a b x y -> Lens ls ( one, a ) ( one, b ) x y
 snd =
-    Base.lens "_2" Tuple.second Tuple.mapSecond
+    Base.lens ".2" Tuple.second (\( one, _ ) b -> ( one, b ))
