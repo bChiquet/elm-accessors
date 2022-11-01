@@ -1,88 +1,48 @@
 module Lens exposing (..)
 
-import Base exposing (lens)
+import Base exposing (Lens, Optic, lens)
 
 
-
--- bar : Lens { a | bar : b } b { a | bar : b }
--- bar : Base.Optic b attrView b -> Base.Optic { a | bar : b } attrView { c | bar : b }
-
-
+bar : Optic pr ls a a x y -> Lens ls { m | bar : a } { m | bar : a } x y
 bar =
-    lens ".bar" .bar (\fn rec -> { rec | bar = fn rec.bar })
+    lens ".bar" .bar (\rec val -> { rec | bar = val })
 
 
-
--- foo : Lens { a | foo : b } b { a | foo : b }
--- foo : Base.Optic b attrView b -> Base.Optic { a | foo : b } attrView { c | foo : b }
-
-
+foo : Optic pr ls a a x y -> Lens ls { m | foo : a } { m | foo : a } x y
 foo =
-    lens ".foo" .foo (\fn rec -> { rec | foo = fn rec.foo })
+    lens ".foo" .foo (\rec val -> { rec | foo = val })
 
 
-
--- qux : Lens { a | qux : b } b { a | qux : b }
--- qux : Base.Optic b attrView b -> Base.Optic { a | qux : b } attrView { c | qux : b }
-
-
+qux : Optic pr ls a a x y -> Lens ls { m | qux : a } { m | qux : a } x y
 qux =
-    lens ".qux" .qux (\fn rec -> { rec | qux = fn rec.qux })
+    lens ".qux" .qux (\rec val -> { rec | qux = val })
 
 
-{-| name : Lens { a | name : b } b { a | name : b }
--}
-
-
-
--- -- name : Base.Optic b attrView b -> Base.Optic { a | name : b } attrView { c | name : b }
--- name : Base.Optic b attrView b -> Base.Optic { a | name : b } attrView { c | name : b }
-
-
+name : Optic pr ls a a x y -> Lens ls { m | name : a } { m | name : a } x y
 name =
-    lens ".name" .name (\fn rec -> { rec | name = fn rec.name })
+    lens ".name" .name (\rec val -> { rec | name = val })
 
 
-
--- age : Lens { a | age : b } b { a | age : b }
--- age : Base.Optic b attrView b -> Base.Optic { a | age : b } attrView { c | age : b }
-
-
+age : Optic pr ls a a x y -> Lens ls { m | age : a } { m | age : a } x y
 age =
-    lens ".age" .age (\fn rec -> { rec | age = fn rec.age })
+    lens ".age" .age (\rec val -> { rec | age = val })
 
 
-
--- email : Lens { a | email : b } b { a | email : b }
--- email : Base.Optic b attrView b -> Base.Optic { a | email : b } attrView { c | email : b }
-
-
+email : Optic pr ls a a x y -> Lens ls { m | email : a } { m | email : a } x y
 email =
-    lens ".email" .email (\fn rec -> { rec | email = fn rec.email })
+    lens ".email" .email (\rec val -> { rec | email = val })
 
 
-
--- stuff : Lens { a | stuff : b } b { a | stuff : b }
--- stuff : Base.Optic b attrView b -> Base.Optic { a | stuff : b } attrView { c | stuff : b }
-
-
+stuff : Optic pr ls a a x y -> Lens ls { m | stuff : a } { m | stuff : a } x y
 stuff =
-    lens ".stuff" .stuff (\fn rec -> { rec | stuff = fn rec.stuff })
+    lens ".stuff" .stuff (\rec val -> { rec | stuff = val })
 
 
-
--- things : Lens { a | things : b } b { a | things : b }
--- things : Base.Optic b attrView b -> Base.Optic { a | things : b } attrView { c | things : b }
-
-
+things : Optic pr ls a a x y -> Lens ls { m | things : a } { m | things : a } x y
 things =
-    lens ".things" .things (\fn rec -> { rec | things = fn rec.things })
+    lens ".things" .things (\rec val -> { rec | things = val })
 
 
-
--- info : Lens { a | info : b } b { a | info : b }
--- info : Base.Optic b attrView b -> Base.Optic { a | info : b } attrView { c | info : b }
-
-
+info : Optic pr ls a a x y -> Lens ls { m | info : a } { m | info : a } x y
 info =
-    lens ".info" .info (\fn rec -> { rec | info = fn rec.info })
+    lens ".info" .info (\rec val -> { rec | info = val })

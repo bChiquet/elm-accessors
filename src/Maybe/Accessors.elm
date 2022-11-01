@@ -1,4 +1,4 @@
-module Maybe.Accessors exposing (try)
+module Maybe.Accessors exposing (just_)
 
 import Base exposing (Optic, Prism)
 
@@ -17,21 +17,21 @@ see [`try_`](Maybe-Accessors#try_) for a flattening lens.
                   , qux = Nothing
                   }
 
-    get (L.foo << Maybe.try << L.bar << Maybe.try << L.stuff) maybeRecord
+    get (L.foo << Maybe.just_ << L.bar << Maybe.just_ << L.stuff) maybeRecord
     --> Just (Just (Just 2) )
 
-    get (L.qux << Maybe.try << L.bar) maybeRecord
+    get (L.qux << Maybe.just_ << L.bar) maybeRecord
     --> Nothing
 
-    map (L.foo << Maybe.try << L.bar << Maybe.try << L.stuff << Maybe.try) ((+) 1) maybeRecord
+    map (L.foo << Maybe.just_ << L.bar << Maybe.just_ << L.stuff << Maybe.just_) ((+) 1) maybeRecord
     --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
 
-    map (L.qux << Maybe.try << L.bar << Maybe.try) ((+) 1) maybeRecord
+    map (L.qux << Maybe.just_ << L.bar << Maybe.just_) ((+) 1) maybeRecord
     --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
 
 -}
-try : Optic pr ls a b x y -> Prism pr (Maybe a) (Maybe b) x y
-try =
+just_ : Optic pr ls a b x y -> Prism pr (Maybe a) (Maybe b) x y
+just_ =
     Base.prism "?" Just (Result.fromMaybe Nothing)
 
 

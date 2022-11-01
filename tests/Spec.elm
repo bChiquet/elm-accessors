@@ -64,15 +64,15 @@ suite =
                         |> Expect.equal "Yop"
             , test "view in list" <|
                 \_ ->
-                    get (L.bar << List.each << L.foo) recordWithList
+                    all (L.bar << List.each << L.foo) recordWithList
                         |> Expect.equal [ 3, 5 ]
             , test "view in Just" <|
                 \_ ->
-                    get (L.bar << Maybe.try << L.qux) maybeRecord
+                    try (L.bar << Maybe.just_ << L.qux) maybeRecord
                         |> Expect.equal (Just False)
             , test "view in Nothing" <|
                 \_ ->
-                    get (L.foo << Maybe.try << L.bar) maybeRecord
+                    try (L.foo << Maybe.just_ << L.bar) maybeRecord
                         |> Expect.equal Nothing
             , describe "dict"
                 [ test "view present" <|
@@ -93,18 +93,19 @@ suite =
                             |> Expect.equal Nothing
                 , test "view with try" <|
                     \_ ->
-                        get (Dict.at "foo" << Maybe.try << L.bar) dictWithRecord
+                        try (Dict.at "foo" << Maybe.just_ << L.bar) dictWithRecord
                             |> Expect.equal (Just "Yop")
-                , test "view with def" <|
-                    \_ ->
-                        dictWithRecord
-                            |> get (Dict.at "not_it" << Maybe.def { bar = "Stuff" } << L.bar)
-                            |> Expect.equal "Stuff"
-                , test "view with or" <|
-                    \_ ->
-                        dictWithRecord
-                            |> get ((Dict.at "not_it" << Maybe.try << L.bar) |> Maybe.or "Stuff")
-                            |> Expect.equal "Stuff"
+
+                -- , test "view with def" <|
+                --     \_ ->
+                --         dictWithRecord
+                --             |> get (Dict.at "not_it" << Maybe.def { bar = "Stuff" } << L.bar)
+                --             |> Expect.equal "Stuff"
+                -- , test "view with or" <|
+                --     \_ ->
+                --         dictWithRecord
+                --             |> get ((Dict.at "not_it" << Maybe.just_ << L.bar) |> Maybe.or "Stuff")
+                --             |> Expect.equal "Stuff"
                 ]
             ]
         , describe "set"
@@ -133,25 +134,25 @@ suite =
                         updatedExample =
                             set (L.bar << List.each << L.bar) "Why, hello" recordWithList
                     in
-                    get (L.bar << List.each << L.bar) updatedExample
+                    all (L.bar << List.each << L.bar) updatedExample
                         |> Expect.equal [ "Why, hello", "Why, hello" ]
             , test "set in Just" <|
                 \_ ->
                     let
                         updatedExample : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
                         updatedExample =
-                            set (L.bar << Maybe.try << L.foo) 4 maybeRecord
+                            set (L.bar << Maybe.just_ << L.foo) 4 maybeRecord
                     in
-                    get (L.bar << Maybe.try << L.foo) updatedExample
+                    try (L.bar << Maybe.just_ << L.foo) updatedExample
                         |> Expect.equal (Just 4)
             , test "set in Nothing" <|
                 \_ ->
                     let
                         -- updatedExample : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
                         updatedExample =
-                            set (L.foo << Maybe.try << L.bar) "Nope" maybeRecord
+                            set (L.foo << Maybe.just_ << L.bar) "Nope" maybeRecord
                     in
-                    get (L.foo << Maybe.try << L.bar) updatedExample
+                    try (L.foo << Maybe.just_ << L.bar) updatedExample
                         |> Expect.equal Nothing
             , describe "dict"
                 [ test "set currently present to present" <|
@@ -159,7 +160,7 @@ suite =
                         let
                             updatedDict : Dict String number
                             updatedDict =
-                                set (Dict.at "foo") (Just 9) dict
+                                set (Dict.at "foo" << Maybe.just_) 9 dict
                         in
                         get (Dict.at "foo") updatedDict |> Expect.equal (Just 9)
                 , test "set currently absent to present" <|
@@ -170,38 +171,39 @@ suite =
                                 set (Dict.at "bar") (Just 9) dict
                         in
                         get (Dict.at "bar") updatedDict |> Expect.equal (Just 9)
-                , test "set currently present to absent" <|
-                    \_ ->
-                        let
-                            updatedDict : Dict String number
-                            updatedDict =
-                                set (Dict.at "foo") Nothing dict
-                        in
-                        get (Dict.at "foo") updatedDict |> Expect.equal Nothing
-                , test "set currently absent to absent" <|
-                    \_ ->
-                        let
-                            updatedDict : Dict String number
-                            updatedDict =
-                                set (Dict.at "bar") Nothing dict
-                        in
-                        get (Dict.at "bar") updatedDict |> Expect.equal Nothing
+
+                -- , test "set currently present to absent" <|
+                --     \_ ->
+                --         let
+                --             updatedDict : Dict String number
+                --             updatedDict =
+                --                 set (Dict.at "foo") Nothing dict
+                --         in
+                --         try (Dict.at "foo") updatedDict |> Expect.equal Nothing
+                -- , test "set currently absent to absent" <|
+                --     \_ ->
+                --         let
+                --             updatedDict : Dict String number
+                --             updatedDict =
+                --                 set (Dict.at "bar") Nothing dict
+                --         in
+                --         try (Dict.at "bar") updatedDict |> Expect.equal Nothing
                 , test "set with try present" <|
                     \_ ->
                         let
                             updatedDict : Dict String { bar : String }
                             updatedDict =
-                                set (Dict.at "foo" << Maybe.try << L.bar) "Sup" dictWithRecord
+                                set (Dict.at "foo" << Maybe.just_ << L.bar) "Sup" dictWithRecord
                         in
-                        get (Dict.at "foo" << Maybe.try << L.bar) updatedDict |> Expect.equal (Just "Sup")
+                        try (Dict.at "foo" << Maybe.just_ << L.bar) updatedDict |> Expect.equal (Just "Sup")
                 , test "set with try absent" <|
                     \_ ->
                         let
                             updatedDict : Dict String { bar : String }
                             updatedDict =
-                                set (Dict.at "bar" << Maybe.try << L.bar) "Sup" dictWithRecord
+                                set (Dict.at "bar" << Maybe.just_ << L.bar) "Sup" dictWithRecord
                         in
-                        get (Dict.at "bar" << Maybe.try << L.bar) updatedDict |> Expect.equal Nothing
+                        try (Dict.at "bar" << Maybe.just_ << L.bar) updatedDict |> Expect.equal Nothing
                 ]
             ]
         , describe "over"
@@ -230,31 +232,32 @@ suite =
                         updatedExample =
                             map (L.bar << List.each << L.foo) (\n -> n - 2) recordWithList
                     in
-                    get (L.bar << List.each << L.foo) updatedExample
+                    all (L.bar << List.each << L.foo) updatedExample
                         |> Expect.equal [ 1, 3 ]
             , test "over through Just" <|
                 \_ ->
                     let
                         updatedExample : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
                         updatedExample =
-                            map (L.bar << Maybe.try << L.foo) (\n -> n + 3) maybeRecord
+                            map (L.bar << Maybe.just_ << L.foo) (\n -> n + 3) maybeRecord
                     in
-                    get (L.bar << Maybe.try << L.foo) updatedExample
+                    try (L.bar << Maybe.just_ << L.foo) updatedExample
                         |> Expect.equal (Just 6)
             , test "over through Nothing" <|
                 \_ ->
                     let
                         -- updatedExample : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
                         updatedExample =
-                            map (L.foo << Maybe.try << L.bar) (\w -> w ++ "!") maybeRecord
+                            map (L.foo << Maybe.just_ << L.bar) (\w -> w ++ "!") maybeRecord
                     in
-                    get (L.foo << Maybe.try << L.bar) updatedExample
+                    try (L.foo << Maybe.just_ << L.bar) updatedExample
                         |> Expect.equal Nothing
             ]
         , describe "making accessors"
             [ let
+                myFoo : Optic pr ls a a x y -> Lens ls { m | foo : a } { m | foo : a } x y
                 myFoo =
-                    lens ".foo" .foo (\f rec -> { rec | foo = f rec.foo })
+                    lens ".foo" .foo (\rec val -> { rec | foo = val })
               in
               describe "makeOneToOne"
                 [ test "get" <|
@@ -279,13 +282,14 @@ suite =
                         updatedRec.foo.foo |> Expect.equal 6
                 ]
             , let
+                myOnEach : Optic pr ls a b x y -> Traversal (List a) (List b) x y
                 myOnEach =
-                    traversal "[]" List.map List.map
+                    traversal "[]" identity List.map
               in
               describe "makeOneToN"
                 [ test "get" <|
                     \_ ->
-                        get (L.bar << myOnEach << L.foo) recordWithList
+                        all (L.bar << myOnEach << L.foo) recordWithList
                             |> Expect.equal [ 3, 5 ]
                 , test "set" <|
                     \_ ->
@@ -294,7 +298,7 @@ suite =
                             updatedExample =
                                 set (L.bar << myOnEach << L.bar) "Greetings" recordWithList
                         in
-                        get (L.bar << List.each << L.bar) updatedExample
+                        all (L.bar << List.each << L.bar) updatedExample
                             |> Expect.equal [ "Greetings", "Greetings" ]
                 , test "over" <|
                     \_ ->
@@ -303,7 +307,7 @@ suite =
                             updatedExample =
                                 map (L.bar << myOnEach << L.foo) (\n -> n - 2) recordWithList
                         in
-                        get (L.bar << List.each << L.foo) updatedExample
+                        all (L.bar << List.each << L.foo) updatedExample
                             |> Expect.equal [ 1, 3 ]
                 ]
             ]

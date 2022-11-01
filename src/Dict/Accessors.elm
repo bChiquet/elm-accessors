@@ -6,7 +6,7 @@ module Dict.Accessors exposing (each, each_, at, id, at_)
 
 -}
 
-import Base exposing (Optic)
+import Base exposing (Lens, Optic, Traversal)
 import Dict exposing (Dict)
 
 
@@ -37,10 +37,10 @@ import Dict exposing (Dict)
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-each : Optic attr view over -> Optic (Dict key attr) (Dict key view) (Dict key over)
+each : Optic pr ls a b x y -> Traversal (Dict key a) (Dict key b) x y
 each =
     Base.traversal "{_}"
-        (\fn -> Dict.map (\_ -> fn))
+        Dict.values
         (\fn -> Dict.map (\_ -> fn))
 
 
@@ -79,11 +79,11 @@ each =
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-each_ : Optic ( key, attr ) view ( ignored, over ) -> Optic (Dict key attr) (Dict key view) (Dict key over)
+each_ : Optic pr ls ( a, b ) c x y -> Traversal (Dict a b) (Dict a c) x y
 each_ =
     Base.traversal "{_}"
+        Dict.toList
         (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn))
-        (\fn -> Dict.map (\idx -> Tuple.pair idx >> fn >> Tuple.second))
 
 
 {-| at: NON-structure preserving accessor over Dict's
@@ -114,7 +114,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-at : String -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict String attr) view (Dict String attr)
+at : String -> Optic pr ls (Maybe a) (Maybe a) x y -> Lens ls (Dict String a) (Dict String a) x y
 at =
     at_ identity
 
@@ -147,7 +147,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-id : Int -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Int attr) view (Dict Int attr)
+id : Int -> Optic pr ls (Maybe a) (Maybe a) x y -> Lens ls (Dict Int a) (Dict Int a) x y
 id =
     at_ String.fromInt
 
@@ -184,10 +184,8 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     --> dict
 
 -}
-at_ :
-    (comparable -> String)
-    -> comparable
-    -> Optic (Maybe attr) view (Maybe attr)
-    -> Optic (Dict comparable attr) view (Dict comparable attr)
+at_ : (comparable -> String) -> comparable -> Optic pr ls (Maybe a) (Maybe a) x y -> Lens ls (Dict comparable a) (Dict comparable a) x y
 at_ toS k =
-    Base.lens ("{" ++ toS k ++ "}") (Dict.get k) (Dict.update k)
+    Base.lens ("{" ++ toS k ++ "}")
+        (Dict.get k)
+        (\rec val -> Dict.update k (always val) rec)

@@ -1,6 +1,6 @@
 module Laws exposing (..)
 
-import Accessors as A
+import Accessors as A exposing (Lens, Optic, Prism, SimpleLens, Traversal)
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Expect exposing (Expectation)
@@ -31,22 +31,16 @@ suite =
     describe "Laws Specs"
         [ isLens L.name personFuzzer strFun string
         , isLens L.age personFuzzer intFun int
-        , isSetable (L.email << A.try) personFuzzer strFun string
-
-        -- TODO: How to express laws for "Prism"-ish things elm-monocle calls this Optional.
-        -- , isOptional (L.email << A.try)
+        , isSetable (L.email << A.just_) personFuzzer strFun string
         , isSetable (L.stuff << A.at 0) personFuzzer strFun string
         , isSetable (L.stuff << A.each) personFuzzer strFun string
         , isSetable (L.things << A.ix 0) personFuzzer strFun string
         , isSetable (L.things << A.every) personFuzzer strFun string
-        , isLens (L.info << A.key "stuff")
-            personFuzzer
-            maybeStrFun
-            (Fuzz.maybe string)
+        , isLens (L.info << A.key "stuff") personFuzzer maybeStrFun (Fuzz.maybe string)
         , test "Name compositions output `jq` style String's" <|
             \() ->
                 A.name (L.info << L.stuff << A.at 7 << L.name)
-                    |> eq ".info.stuff(7)?.name"
+                    |> eq ".info.stuff[7]?.name"
         ]
 
 
@@ -150,50 +144,20 @@ isLens l fzr valFn val =
         ]
 
 
-
--- setter_id : Setable structure transformed attribute built -> structure -> Bool
-
-
 setter_id l s =
     A.map l identity s == s
-
-
-
--- setter_composition :
---     Setable structure transformed attribute built
---     -> structure
---     -> Function attribute
---     -> Function attribute
---     -> Bool
 
 
 setter_composition l s f g =
     A.map l f (A.map l g s) == A.map l (f << g) s
 
 
-
--- setter_set_set :
---     Setable structure transformed attribute built
---     -> structure
---     -> attribute
---     -> attribute
---     -> Bool
-
-
 setter_set_set l s a b =
     A.set l b (A.set l a s) == A.set l b s
 
 
-
--- lens_set_get : Lens value view over -> value -> Bool
-
-
 lens_set_get l s =
     A.set l (A.get l s) s == s
-
-
-
--- lens_get_set : Lens value view over -> value -> over -> Bool
 
 
 lens_get_set l s a =

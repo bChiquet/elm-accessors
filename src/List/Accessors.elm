@@ -1,4 +1,4 @@
-module List.Accessors exposing (each, at, id)
+module List.Accessors exposing (each, each_, at, id)
 
 {-| List.Accessors
 
@@ -6,7 +6,7 @@ module List.Accessors exposing (each, at, id)
 
 -}
 
-import Base exposing (Optic(..), Prism, Traversal)
+import Base exposing (Optic(..), Traversal)
 import Tuple.Accessors as Tuple
 
 
@@ -52,12 +52,12 @@ each =
                          ]
                  }
 
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne : (Int, { bar : Int }) -> { bar : Int }
     multiplyIfGTOne ( idx, ({ bar } as rec) ) =
         if idx > 0 then
-            ( idx, { bar = bar * 10 } )
+             { bar = bar * 10 }
         else
-            (idx, rec)
+            rec
 
     get (L.foo << List.each_) listRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
@@ -72,15 +72,10 @@ each =
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-
-
-
--- each_ : Optic pr ls a ( Int, b ) x y -> Traversal (List a) (List b) x y
-
-
+each_ : Optic pr ls ( Int, b ) c x y -> Traversal (List b) (List c) x y
 each_ =
     Base.traversal "#[]"
-        Tuple.second
+        (List.indexedMap Tuple.pair)
         (\fn -> List.indexedMap (\idx -> Tuple.pair idx >> fn))
 
 
@@ -111,7 +106,7 @@ each_ =
 -}
 at : Int -> Optic pr ls a a x y -> Traversal (List a) (List a) x y
 at key =
-    Base.traversal ("[" ++ String.fromInt key ++ "]")
+    Base.traversal ("[" ++ String.fromInt key ++ "]?")
         identity
         (\fn ->
             List.indexedMap
@@ -179,7 +174,7 @@ at key =
 -}
 id : Int -> Optic pr ls { a | id : Int } { a | id : Int } x y -> Traversal (List { a | id : Int }) (List { a | id : Int }) x y
 id key =
-    Base.traversal ("(" ++ String.fromInt key ++ ")")
+    Base.traversal ("(" ++ String.fromInt key ++ ")?")
         identity
         (\fn ->
             List.map
@@ -191,31 +186,3 @@ id key =
                         v
                 )
         )
-
-
-
---         (if key < 0 then
---             always Nothing
---          else
---             List.filter (\v -> v.id == key)
---                 >> List.head
---         )
---         (\fn ->
---             -- NOTE: `<< try` at the end ensures we can't delete any existing keys
---             -- so `List.filterMap identity` should be safe
---             -- TODO: write this in terms of `foldr` to avoid double iteration.
---             List.map
---                 (\v ->
---                     if key == v.id then
---                         fn (Just v)
---                     else
---                         Just v
---                 )
---                 >> List.filterMap identity
---         )
---         << Maybe.try
-
-
-uncurry : (a -> b -> c) -> ( a, b ) -> c
-uncurry f ( a, b ) =
-    f a b

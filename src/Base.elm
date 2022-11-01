@@ -2,7 +2,7 @@ module Base exposing
     ( Optic(..), Traversal, Lens, Prism, Iso, Y
     , SimpleOptic, SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
-    , get, has, map, set, new, name
+    , get, all, try, has, map, set, new, name
     , internal
     )
 
@@ -24,7 +24,7 @@ Accessors are built using these functions:
 
 # Actions
 
-@docs get, has, map, set, new, name
+@docs get, all, try, has, map, set, new, name
 
 -}
 
@@ -158,6 +158,16 @@ lens n sa sbt (Optic sub) =
         }
 
 
+{-| A prism constructor.
+
+Parameters are: reconstructor and a splitter.
+
+Reconstructor takes a final value and constructs a final object.
+
+The splitter turns initial object either to final object directly (if initial object is of wrong variant),
+or spits out `a`.
+
+-}
 prism :
     String
     -> (b -> t)
@@ -276,7 +286,7 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 
 
 get :
-    (Optic pr Y a b a b -> Optic pr Y s t a b)
+    (Optic pr ls a b a b -> Optic pr Y s t a b)
     -> s
     -> a
 get accessor s =
@@ -284,7 +294,7 @@ get accessor s =
         { make = \_ -> void "`make` should never be called from `get`"
         , over = \_ -> void "`over` should never be called from `get`"
         , list = \_ -> void "`list` should never be called from `get`"
-        , view = \( (), a ) -> a
+        , view = Tuple.second
         , name = ""
         }
         |> accessor
@@ -329,6 +339,63 @@ has accessor =
     ).list
         >> List.isEmpty
         >> not
+
+
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    ["Stuff", "things"]
+        |> try (at 2)
+    --> Nothing
+
+    ["Stuff", "things"]
+        |> try (at 0)
+    --> Just "Stuff"
+
+-}
+try :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> s
+    -> Maybe a
+try accessor =
+    (Optic
+        { make = \_ -> void "`make` should never be called from `try`"
+        , over = \_ -> void "`over` should never be called from `try`"
+        , view = \_ -> void "`view` should never be called from `try`"
+        , list = List.singleton
+        , name = ""
+        }
+        |> accessor
+        |> internal
+    ).list
+        >> List.head
+
+
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    Just "Stuff"
+        |> all just_
+    --> ["Stuff"]
+
+    Nothing
+        |> all just_
+    --> []
+
+-}
+all :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> s
+    -> List a
+all accessor =
+    (Optic
+        { make = \_ -> void "`make` should never be called from `all`"
+        , over = \_ -> void "`over` should never be called from `all`"
+        , view = \_ -> void "`view` should never be called from `all`"
+        , list = List.singleton
+        , name = ""
+        }
+        |> accessor
+        |> internal
+    ).list
 
 
 set :
