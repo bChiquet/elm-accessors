@@ -7,6 +7,7 @@ import Result exposing (Result(..))
 {-| This accessor lets you access values inside the Ok variant of a Result.
 
     import Accessors exposing (..)
+    import Result.Accessors as Result
     import Lens as L
 
     maybeRecord : { foo : Result String { bar : Int }, qux : Result String { bar : Int } }
@@ -14,16 +15,16 @@ import Result exposing (Result(..))
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << ok << L.bar) maybeRecord
+    try (L.foo << Result.ok_ << L.bar) maybeRecord
     --> Just 2
 
-    get (L.qux << ok << L.bar) maybeRecord
+    try (L.qux << Result.ok_ << L.bar) maybeRecord
     --> Nothing
 
-    map (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    map (L.foo << Result.ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
 
-    map (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    map (L.qux << Result.ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
@@ -35,6 +36,7 @@ ok_ =
 {-| This accessor lets you access values inside the Err variant of a Result.
 
     import Accessors exposing (..)
+    import Result.Accessors as Result
     import Lens as L
 
     maybeRecord : { foo : Result String { bar : Int }, qux : Result String { bar : Int } }
@@ -42,16 +44,16 @@ ok_ =
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << err) maybeRecord
+    try (L.foo << Result.err_) maybeRecord
     --> Nothing
 
-    get (L.qux << err) maybeRecord
+    try (L.qux << Result.err_) maybeRecord
     --> Just "Not an Int"
 
-    map (L.foo << err) String.toUpper maybeRecord
+    map (L.foo << Result.err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
-    map (L.qux << err) String.toUpper maybeRecord
+    map (L.qux << Result.err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}

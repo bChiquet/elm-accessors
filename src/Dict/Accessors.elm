@@ -10,9 +10,9 @@ import Base exposing (Lens, Optic, Traversal)
 import Dict exposing (Dict)
 
 
-{-| values: This accessor lets you traverse a Dict including the index of each element
+{-| each: This accessor lets you traverse a Dict including the index of each element
 
-    import Accessors exposing (get, map)
+    import Accessors exposing (..)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -24,14 +24,14 @@ import Dict exposing (Dict)
                          ] |> Dict.fromList
                  }
 
-    get (L.foo << Dict.each) dictRecord
-    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList
+    all (L.foo << Dict.each) dictRecord
+    --> [{bar = 2}, {bar = 3}, {bar = 4}]
 
     map (L.foo << Dict.each << L.bar) ((*) 10) dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 30}), ("c", {bar = 40})] |> Dict.fromList}
 
-    get (L.foo << Dict.each << L.bar) dictRecord
-    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+    all (L.foo << Dict.each << L.bar) dictRecord
+    --> [2, 3, 4]
 
     map (L.foo << Dict.each << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
@@ -46,7 +46,7 @@ each =
 
 {-| keyed: This accessor lets you traverse a Dict including the index of each element
 
-    import Accessors exposing (get, map, snd)
+    import Accessors exposing (..)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -58,24 +58,24 @@ each =
                          ] |> Dict.fromList
                  }
 
-    multiplyIfA : (String, { bar : Int }) -> (String, { bar : Int })
+    multiplyIfA : (String, { bar : Int }) -> { bar : Int }
     multiplyIfA ( key, ({ bar } as rec) ) =
         if key == "a" then
-            ( key, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (key, rec)
+            rec
 
 
-    get (L.foo << Dict.each_) dictRecord
-    --> [("a", ("a", {bar = 2})), ("b", ("b", {bar = 3})), ("c", ("c", {bar = 4}))] |> Dict.fromList
+    all (L.foo << Dict.each_) dictRecord
+    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})]
 
     map (L.foo << Dict.each_) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
-    get (L.foo << Dict.each_ << snd << L.bar) dictRecord
-    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+    all (L.foo << Dict.each_ << ixL L.bar) dictRecord
+    --> [2, 3, 4]
 
-    map (L.foo << Dict.each_ << snd << L.bar) ((+) 1) dictRecord
+    map (L.foo << Dict.each_ << ixL L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
@@ -90,7 +90,7 @@ each_ =
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
-    import Accessors exposing (get, set, snd, try)
+    import Accessors exposing (..)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -104,13 +104,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (Dict.at "baz") dict
     --> Nothing
 
-    get (Dict.at "foo" << try << L.bar) dict
+    try (Dict.at "foo" << just_ << L.bar) dict
     --> Just 2
 
     set (Dict.at "foo") Nothing dict
     --> Dict.remove "foo" dict
 
-    set (Dict.at "baz" << try << L.bar) 3 dict
+    set (Dict.at "baz" << just_ << L.bar) 3 dict
     --> dict
 
 -}
@@ -123,7 +123,7 @@ at =
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
-    import Accessors exposing (get, set, snd, try)
+    import Accessors exposing (..)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -137,13 +137,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (Dict.id 0) dict
     --> Nothing
 
-    get (Dict.id 1 << try << L.bar) dict
+    try (Dict.id 1 << just_ << L.bar) dict
     --> Just 2
 
     set (Dict.id 1) Nothing dict
     --> Dict.remove 1 dict
 
-    set (Dict.id 0 << try << L.bar) 3 dict
+    set (Dict.id 0 << just_ << L.bar) 3 dict
     --> dict
 
 -}
@@ -156,7 +156,7 @@ id =
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
-    import Accessors exposing (Optic, get, set, snd, try)
+    import Accessors exposing (..)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Lens as L
@@ -164,7 +164,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     dict : Dict Char {bar : Int}
     dict = Dict.fromList [('C', {bar = 2})]
 
-    atC : Char -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Char attr) view (Dict Char attr)
+    atC : Char -> Optic pr ls (Maybe {bar : Int}) (Maybe {bar : Int}) x y -> Lens ls (Dict Char {bar : Int}) (Dict Char {bar : Int}) x y
     atC =
         Dict.at_ String.fromChar
 
@@ -174,13 +174,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (atC 'Z') dict
     --> Nothing
 
-    get (atC 'C' << try << L.bar) dict
+    try (atC 'C' << just_ << L.bar) dict
     --> Just 2
 
     set (atC 'C') Nothing dict
     --> Dict.remove 'C' dict
 
-    set (atC 'Z' << try << L.bar) 3 dict
+    set (atC 'Z' << just_ << L.bar) 3 dict
     --> dict
 
 -}

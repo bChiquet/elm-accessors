@@ -3,6 +3,7 @@ module Accessors exposing
     , Traversal, Lens, Prism, Iso
     , SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
+    , ixT, ixL, ixP
     , get, all, try, has, map, set, new, name
     , just_, ok_, err_
     , values, keyed, key, keyI, key_
@@ -33,6 +34,11 @@ own accessors more convenient and hopefully easier to understand.
 Accessors are built using these functions:
 
 @docs traversal, lens, prism, iso
+
+
+## Lifters for composing w/ indexed optics
+
+@docs ixT, ixL, ixP
 
 
 ## Action functions
@@ -138,6 +144,18 @@ type alias SimpleIso pr ls s a =
 -- Constructors
 
 
+{-| An isomorphism constructor.
+-}
+iso :
+    String
+    -> (s -> a)
+    -> (b -> t)
+    -> Base.Optic pr ls a b x y
+    -> Base.Iso pr ls s t x y
+iso =
+    Base.iso
+
+
 {-| This exposes a description field that's necessary for use with the name function
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
@@ -200,16 +218,32 @@ traversal =
     Base.traversal
 
 
-{-| An isomorphism constructor.
--}
-iso :
-    String
-    -> (s -> a)
-    -> (b -> t)
-    -> Base.Optic pr ls a b x y
-    -> Base.Iso pr ls s t x y
-iso =
-    Base.iso
+
+-- Lifters for composing w/ indexed optics
+
+
+ixT :
+    (Optic pr ls x y x y -> Optic pr ls b t x y)
+    -> Optic a c x y d e
+    -> Traversal ( idx, b ) t d e
+ixT =
+    Base.ixT
+
+
+ixL :
+    (Optic pr Y x b x b -> Optic pr Y a t x b)
+    -> Optic c ls x b d y
+    -> Lens ls ( idx, a ) t d y
+ixL =
+    Base.ixL
+
+
+ixP :
+    (Optic Y ls value rte value rte -> Optic Y ls b t value rte)
+    -> Optic pr a value rte x y
+    -> Prism pr ( idx, b ) t x y
+ixP =
+    Base.ixP
 
 
 
@@ -273,23 +307,23 @@ try =
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
 
     Just 1234
-        |> has try
+        |> has just_
     --> True
 
     Nothing
-        |> has try
+        |> has just_
     --> False
 
-    ["Stuff", "things"]
-        |> has (at 2)
+    [ "Wooo", "Things" ]
+        |> has (at 7)
     --> False
 
-    ["Stuff", "things"]
+    [ "Wooo", "Things" ]
         |> has (at 0)
     --> True
 
 -}
-has : (Optic pr ls a b a b -> Optic Y ls s t a b) -> s -> Bool
+has : (Optic pr ls a b a b -> Optic pr ls s t a b) -> s -> Bool
 has =
     Base.has
 
@@ -358,16 +392,16 @@ name =
                   , qux = Nothing
                   }
 
-    get (L.foo << try << L.bar << try << L.stuff) maybeRecord
-    --> Just (Just (Just 2) )
+    try (L.foo << just_ << L.bar << just_ << L.stuff) maybeRecord
+    --> Just (Just 2 )
 
-    get (L.qux << try << L.bar) maybeRecord
+    try (L.qux << just_ << L.bar) maybeRecord
     --> Nothing
 
-    map (L.foo << try << L.bar << try << L.stuff << try) ((+) 1) maybeRecord
+    map (L.foo << just_ << L.bar << just_ << L.stuff << just_) ((+) 1) maybeRecord
     --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
 
-    map (L.qux << try << L.bar << try) ((+) 1) maybeRecord
+    map (L.qux << just_ << L.bar << just_) ((+) 1) maybeRecord
     --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
 
 -}
@@ -385,13 +419,13 @@ just_ =
 --    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
 --                  , qux = Nothing
 --                  }
---    get (L.foo << try_ << L.bar << try_ << L.stuff) maybeRecord
+--    try (L.foo << just__ << L.bar << just__ << L.stuff) maybeRecord
 --    --> Just 2
---    get (L.qux << try_ << L.bar) maybeRecord
+--    try (L.qux << just__ << L.bar) maybeRecord
 --    --> Nothing
---    map (L.foo << try_ << L.bar << try_ << L.stuff << try_) ((+) 1) maybeRecord
+--    map (L.foo << just__ << L.bar << just__ << L.stuff << just__) ((+) 1) maybeRecord
 --    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
---    map (L.qux << try_ << L.bar << try_) ((+) 1) maybeRecord
+--    map (L.qux << just__ << L.bar << just__) ((+) 1) maybeRecord
 --    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
 ---}
 --try_ : Optic attr (Maybe view) over -> Optic (Maybe attr) (Maybe view) (Maybe over)
@@ -408,9 +442,9 @@ just_ =
 --    get (key "baz" << def {bar = 0}) dict
 --    --> {bar = 0}
 --    -- NOTE: The following do not compile :thinking:
---    --get (key "foo" << try << L.bar << def 0) dict
+--    --get (key "foo" << just_ << L.bar << def 0) dict
 --    ----> 2
---    --get (key "baz" << try << L.bar << def 0) dict
+--    --get (key "baz" << just_ << L.bar << def 0) dict
 --    ----> 0
 ---}
 --def : attr -> Optic attr view over -> Optic (Maybe attr) view (Maybe over)
@@ -427,9 +461,9 @@ just_ =
 --    ----> {bar = 2}
 --    --get (key "baz" << or {bar = 0}) dict
 --    ----> {bar = 0}
---    get ((key "foo" << try << L.bar) |> or 0) dict
+--    get ((key "foo" << just_ << L.bar) |> or 0) dict
 --    --> 2
---    get ((key "baz" << try << L.bar) |> or 0) dict
+--    get ((key "baz" << just_ << L.bar) |> or 0) dict
 --    --> 0
 ---}
 --or : attr -> (Optic attr attr attrOver -> Optic value (Maybe attr) over) -> Optic attr attrView attrOver -> Optic value attrView over
@@ -464,8 +498,8 @@ at =
 {-| This accessor combinator lets you access values inside Array.
 alias for [`Array.Accessors.each`](Array-Accessors#each)
 
-    import Array exposing (Array)
     import Accessors exposing (..)
+    import Array exposing (Array)
     import Lens as L
 
     arrayRecord : {foo : Array {bar : Int}}
@@ -474,8 +508,8 @@ alias for [`Array.Accessors.each`](Array-Accessors#each)
             Array.fromList [{ bar = 2 }, { bar = 3 }, {bar = 4}]
         }
 
-    get (L.foo << every << L.bar) arrayRecord
-    --> Array.fromList [2, 3, 4]
+    all (L.foo << every << L.bar) arrayRecord
+    --> [2, 3, 4]
 
     map (L.foo << every << L.bar) ((+) 1) arrayRecord
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
@@ -500,24 +534,24 @@ alias for [`Array.Accessors.each_`](Array-Accessors#each_)
                           ] |> Array.fromList
                   }
 
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne : (Int, { bar : Int }) -> { bar : Int }
     multiplyIfGTOne ( idx, ({ bar } as rec) ) =
         if idx > 0 then
-            ( idx, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (idx, rec)
+            rec
 
 
-    get (L.foo << everyIdx) arrayRecord
-    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})] |> Array.fromList
+    all (L.foo << everyIdx) arrayRecord
+    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
 
     map (L.foo << everyIdx) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
-    get (L.foo << everyIdx << snd << L.bar) arrayRecord
-    --> [2, 3, 4] |> Array.fromList
+    all (L.foo << everyIdx << ixL L.bar) arrayRecord
+    --> [2, 3, 4]
 
-    map (L.foo << everyIdx << snd << L.bar) ((+) 1) arrayRecord
+    map (L.foo << everyIdx << ixL L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
@@ -535,13 +569,13 @@ everyIdx =
     arr : Array { bar : String }
     arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
 
-    get (ix 1) arr
+    try (ix 1) arr
     --> Just { bar = "Things" }
 
-    get (ix 9000) arr
+    try (ix 9000) arr
     --> Nothing
 
-    get (ix 0 << L.bar) arr
+    try (ix 0 << L.bar) arr
     --> Just "Stuff"
 
     set (ix 0 << L.bar) "Whatever" arr
@@ -567,16 +601,16 @@ alias for [`Result.Accessors.onOk`](Result-Accessors#onOk)
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << ok << L.bar) maybeRecord
+    try (L.foo << ok_ << L.bar) maybeRecord
     --> Just 2
 
-    get (L.qux << ok << L.bar) maybeRecord
+    try (L.qux << ok_ << L.bar) maybeRecord
     --> Nothing
 
-    map (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    map (L.foo << ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
 
-    map (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    map (L.qux << ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
@@ -596,16 +630,16 @@ alias for [`Result.Accessors.onErr`](Result-Accessors#onErr)
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << err) maybeRecord
+    try (L.foo << err_) maybeRecord
     --> Nothing
 
-    get (L.qux << err) maybeRecord
+    try (L.qux << err_) maybeRecord
     --> Just "Not an Int"
 
-    map (L.foo << err) String.toUpper maybeRecord
+    map (L.foo << err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
-    map (L.qux << err) String.toUpper maybeRecord
+    map (L.qux << err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
@@ -628,14 +662,14 @@ alias for [`Dict.Accessors.each`](Dict-Accessors#each)
                          ] |> Dict.fromList
                  }
 
-    get (L.foo << values) dictRecord
-    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList
+    all (L.foo << values) dictRecord
+    --> [{bar = 2}, {bar = 3}, {bar = 4}]
 
     map (L.foo << values << L.bar) ((*) 10) dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 30}), ("c", {bar = 40})] |> Dict.fromList}
 
-    get (L.foo << values << L.bar) dictRecord
-    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+    all (L.foo << values << L.bar) dictRecord
+    --> [2, 3, 4]
 
     map (L.foo << values << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
@@ -660,24 +694,24 @@ alias for [`Dict.Accessors.each_`](Dict-Accessors#each_)
                          ] |> Dict.fromList
                  }
 
-    multiplyIfA : (String, { bar : Int }) -> (String, { bar : Int })
+    multiplyIfA : (String, { bar : Int }) -> { bar : Int }
     multiplyIfA ( key, ({ bar } as rec) ) =
         if key == "a" then
-            ( key, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (key, rec)
+            rec
 
 
-    get (L.foo << keyed) dictRecord
-    --> [("a", ("a", {bar = 2})), ("b", ("b", {bar = 3})), ("c", ("c", {bar = 4}))] |> Dict.fromList
+    all (L.foo << keyed) dictRecord
+    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})]
 
     map (L.foo << keyed) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
-    get (L.foo << keyed << snd << L.bar) dictRecord
-    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+    all (L.foo << keyed << ixL L.bar) dictRecord
+    --> [2, 3, 4]
 
-    map (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord
+    map (L.foo << keyed << ixL L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
@@ -704,13 +738,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (key "baz") dict
     --> Nothing
 
-    get (key "foo" << try << L.bar) dict
+    try (key "foo" << just_ << L.bar) dict
     --> Just 2
 
     set (key "foo") Nothing dict
     --> Dict.remove "foo" dict
 
-    set (key "baz" << try << L.bar) 3 dict
+    set (key "baz" << just_ << L.bar) 3 dict
     --> dict
 
 -}
@@ -737,13 +771,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (keyI 0) dict
     --> Nothing
 
-    get (keyI 1 << try << L.bar) dict
+    try (keyI 1 << just_ << L.bar) dict
     --> Just 2
 
     set (keyI 1) Nothing dict
     --> Dict.remove 1 dict
 
-    set (keyI 0 << try << L.bar) 3 dict
+    set (keyI 0 << just_ << L.bar) 3 dict
     --> dict
 
 -}
@@ -764,7 +798,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     dict : Dict Char {bar : Int}
     dict = Dict.fromList [('C', {bar = 2})]
 
-    keyC : Char -> Optic (Maybe attr) view (Maybe attr) -> Optic (Dict Char attr) view (Dict Char attr)
+    keyC : Char -> Optic pr ls (Maybe {bar : Int}) (Maybe {bar : Int}) x y -> Lens ls (Dict Char {bar : Int}) (Dict Char {bar : Int}) x y
     keyC =
         key_ String.fromChar
 
@@ -774,13 +808,13 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (keyC 'Z') dict
     --> Nothing
 
-    get (keyC 'C' << try << L.bar) dict
+    try (keyC 'C' << just_ << L.bar) dict
     --> Just 2
 
     set (keyC 'C') Nothing dict
     --> Dict.remove 'C' dict
 
-    set (keyC 'Z' << try << L.bar) 3 dict
+    set (keyC 'Z' << just_ << L.bar) 3 dict
     --> dict
 
 -}

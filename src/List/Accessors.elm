@@ -16,7 +16,7 @@ import Tuple.Accessors as Tuple
 
 {-| This accessor combinator lets you access values inside List.
 
-    import Accessors exposing (get, map)
+    import Accessors exposing (..)
     import List.Accessors as List
     import Lens as L
 
@@ -27,7 +27,7 @@ import Tuple.Accessors as Tuple
                          ]
                  }
 
-    get (L.foo << List.each << L.bar) listRecord
+    all (L.foo << List.each << L.bar) listRecord
     --> [2, 3, 4]
 
     map (L.foo << List.each << L.bar) ((+) 1) listRecord
@@ -41,7 +41,7 @@ each =
 
 {-| This accessor lets you traverse a list including the index of each element
 
-    import Accessors exposing (get, map, snd)
+    import Accessors exposing (..)
     import List.Accessors as List
     import Lens as L
 
@@ -59,16 +59,16 @@ each =
         else
             rec
 
-    get (L.foo << List.each_) listRecord
+    all (L.foo << List.each_) listRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
 
     map (L.foo << List.each_) multiplyIfGTOne listRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
 
-    get (L.foo << List.each_ << snd << L.bar) listRecord
+    all (L.foo << List.each_ << ixL L.bar) listRecord
     --> [2, 3, 4]
 
-    map (L.foo << List.each_ << snd << L.bar) ((+) 1) listRecord
+    map (L.foo << List.each_ << ixL L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
@@ -81,20 +81,20 @@ each_ =
 
 {-| at: Structure Preserving accessor over List members.
 
-    import Accessors exposing (get, set)
+    import Accessors exposing (..)
     import List.Accessors as List
     import Lens as L
 
     list : List { bar : String }
     list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
 
-    get (List.at 1) list
+    try (List.at 1) list
     --> Just { bar = "Things" }
 
-    get (List.at 9000) list
+    try (List.at 9000) list
     --> Nothing
 
-    get (List.at 0 << L.bar) list
+    try (List.at 0 << L.bar) list
     --> Just "Stuff"
 
     set (List.at 0 << L.bar) "Whatever" list
@@ -107,7 +107,19 @@ each_ =
 at : Int -> Optic pr ls a a x y -> Traversal (List a) (List a) x y
 at key =
     Base.traversal ("[" ++ String.fromInt key ++ "]?")
-        identity
+        (List.foldl
+            (\v ( idx, acc ) ->
+                ( idx + 1
+                , if idx == key then
+                    v :: acc
+
+                  else
+                    acc
+                )
+            )
+            ( 0, [] )
+            >> Tuple.second
+        )
         (\fn ->
             List.indexedMap
                 (\idx v ->
@@ -149,20 +161,20 @@ at key =
 
 {-| id: Structure Preserving accessor over List members.
 
-    import Accessors exposing (get, set)
+    import Accessors exposing (..)
     import List.Accessors as List
     import Lens as L
 
     list : List { id : Int, bar : String }
     list = [{ id = 7, bar = "Stuff" }, { id = 1, bar =  "Things" }, { id = 5, bar = "Woot" }]
 
-    get (List.id 1) list
+    try (List.id 1) list
     --> Just { id = 1, bar = "Things" }
 
-    get (List.id 0) list
+    try (List.id 0) list
     --> Nothing
 
-    get (List.id 7 << L.bar) list
+    try (List.id 7 << L.bar) list
     --> Just "Stuff"
 
     set (List.id 7 << L.bar) "Whatever" list
@@ -175,7 +187,15 @@ at key =
 id : Int -> Optic pr ls { a | id : Int } { a | id : Int } x y -> Traversal (List { a | id : Int }) (List { a | id : Int }) x y
 id key =
     Base.traversal ("(" ++ String.fromInt key ++ ")?")
-        identity
+        (List.filterMap
+            (\v ->
+                if v.id == key then
+                    Just v
+
+                else
+                    Nothing
+            )
+        )
         (\fn ->
             List.map
                 (\v ->

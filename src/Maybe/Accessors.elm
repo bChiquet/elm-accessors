@@ -6,7 +6,7 @@ import Base exposing (Optic, Prism)
 {-| This accessor combinator lets you access values inside Maybe.
 see [`try_`](Maybe-Accessors#try_) for a flattening lens.
 
-    import Base exposing (get, map)
+    import Base exposing (try, map)
     import Dict exposing (Dict)
     import Dict.Accessors as Dict
     import Maybe.Accessors as Maybe
@@ -17,10 +17,10 @@ see [`try_`](Maybe-Accessors#try_) for a flattening lens.
                   , qux = Nothing
                   }
 
-    get (L.foo << Maybe.just_ << L.bar << Maybe.just_ << L.stuff) maybeRecord
-    --> Just (Just (Just 2) )
+    try (L.foo << Maybe.just_ << L.bar << Maybe.just_ << L.stuff) maybeRecord
+    --> Just (Just 2)
 
-    get (L.qux << Maybe.just_ << L.bar) maybeRecord
+    try (L.qux << Maybe.just_ << L.bar) maybeRecord
     --> Nothing
 
     map (L.foo << Maybe.just_ << L.bar << Maybe.just_ << L.stuff << Maybe.just_) ((+) 1) maybeRecord

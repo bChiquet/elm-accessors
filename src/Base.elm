@@ -2,6 +2,7 @@ module Base exposing
     ( Optic(..), Traversal, Lens, Prism, Iso, Y
     , SimpleOptic, SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
+    , ixT, ixL, ixP
     , get, all, try, has, map, set, new, name
     , internal
     )
@@ -20,6 +21,11 @@ module Base exposing
 Accessors are built using these functions:
 
 @docs traversal, lens, prism, iso
+
+
+# Accessor Lifters for Indexed operations
+
+@docs ixT, ixL, ixP
 
 
 # Actions
@@ -41,19 +47,19 @@ Implementation: A relation is a banal record storing a `get` function and an
 
 -}
 type Optic pr ls s t a b
-    = Optic (Internal pr ls s t a b)
+    = Optic (Internal s t a b)
 
 
-type alias Internal pr ls s t a b =
-    { view : ( ls, s ) -> a
-    , make : ( pr, b ) -> t
+type alias Internal s t a b =
+    { view : s -> a
+    , make : b -> t
     , over : (a -> b) -> s -> t
     , list : s -> List a
     , name : String
     }
 
 
-internal : Optic pr ls s t a b -> Internal pr ls s t a b
+internal : Optic pr ls s t a b -> Internal s t a b
 internal (Optic i) =
     i
 
@@ -143,15 +149,13 @@ lens :
     -> (Optic pr ls a b x y -> Lens ls s t x y)
 lens n sa sbt (Optic sub) =
     let
-        over_ =
-            \f s -> sbt s <| f <| sa s
-
-        view_ =
-            \( _, s ) -> sa s
+        over_ : (a -> b) -> s -> t
+        over_ f s =
+            s |> sa |> f |> sbt s
     in
     Optic
         { list = sa >> List.singleton >> List.concatMap sub.list
-        , view = \( y, s ) -> sub.view ( y, view_ ( y, s ) )
+        , view = sub.view << sa
         , make = \_ -> void "Can't call `make` with a Lens"
         , over = sub.over >> over_
         , name = n ++ sub.name
@@ -175,11 +179,9 @@ prism :
     -> (Optic pr ls a b x y -> Prism pr s t x y)
 prism n bt sta (Optic sub) =
     let
-        make_ =
-            \( _, b ) -> bt b
-
-        over_ =
-            \f -> sta >> Result.map (f >> bt) >> mergeResult
+        over_ : (a -> b) -> s -> t
+        over_ f =
+            sta >> Result.map (f >> bt) >> mergeResult
     in
     Optic
         { view = \_ -> void "Can't call `view` with a Prism"
@@ -188,7 +190,7 @@ prism n bt sta (Optic sub) =
                 >> Result.map (\a -> [ a ])
                 >> Result.withDefault []
                 >> List.concatMap sub.list
-        , make = \( y, b ) -> make_ ( y, sub.make ( y, b ) )
+        , make = bt << sub.make
         , over = sub.over >> over_
         , name = n ++ sub.name
         }
@@ -219,24 +221,56 @@ traversal n sa abst (Optic sub) =
         }
 
 
+ixT :
+    (Optic pr ls x y x y -> Optic pr ls b t x y)
+    -> Optic a c x y d e
+    -> Traversal ( idx, b ) t d e
+ixT t =
+    traversal (name t)
+        (\( _, rec ) -> all t rec)
+        (\fn -> Tuple.mapSecond (map t fn) >> Tuple.second)
+
+
+ixL :
+    (Optic pr Y x z x z -> Optic pr Y a b x z)
+    -> Optic c ls x z d y
+    -> Lens ls ( idx, a ) b d y
+ixL l =
+    lens (name l)
+        (\( _, rec ) -> get l rec)
+        (\rec val -> Tuple.mapSecond (set l val) rec |> Tuple.second)
+
+
+ixP :
+    (Optic Y ls value rte value rte -> Optic Y ls b t value rte)
+    -> Optic pr a value rte x y
+    -> Prism pr ( idx, b ) t x y
+ixP p =
+    prism (name p)
+        (\b -> new p b)
+        (\( _, s ) ->
+            case try p s of
+                Just v ->
+                    Ok v
+
+                Nothing ->
+                    Err (map p (\_ -> void "make an ix") s)
+        )
+
+
 {-| An isomorphism constructor.
 -}
 iso : String -> (s -> a) -> (b -> t) -> Optic pr ls a b x y -> Iso pr ls s t x y
 iso n sa bt (Optic sub) =
     let
-        view_ =
-            \( _, a ) -> sa a
-
-        make_ =
-            \( _, b ) -> bt b
-
-        over_ =
-            \f s -> bt <| f <| sa s
+        over_ : (a -> b) -> s -> t
+        over_ f =
+            bt << f << sa
     in
     Optic
-        { view = \( y, s ) -> sub.view ( y, view_ ( y, s ) )
+        { view = sub.view << sa
         , list = sa >> List.singleton >> List.concatMap sub.list
-        , make = \( y, b ) -> make_ ( y, sub.make ( y, b ) )
+        , make = bt << sub.make
         , over = sub.over >> over_
         , name = n ++ sub.name
         }
@@ -289,18 +323,17 @@ get :
     (Optic pr ls a b a b -> Optic pr Y s t a b)
     -> s
     -> a
-get accessor s =
+get accessor =
     (Optic
         { make = \_ -> void "`make` should never be called from `get`"
         , over = \_ -> void "`over` should never be called from `get`"
         , list = \_ -> void "`list` should never be called from `get`"
-        , view = Tuple.second
+        , view = identity
         , name = ""
         }
         |> accessor
         |> internal
     ).view
-        ( (), s )
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
@@ -323,7 +356,7 @@ get accessor s =
 
 -}
 has :
-    (Optic pr ls a b a b -> Optic Y ls s t a b)
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
     -> s
     -> Bool
 has accessor =
@@ -337,8 +370,8 @@ has accessor =
         |> accessor
         |> internal
     ).list
-        >> List.isEmpty
-        >> not
+        >> List.head
+        >> (/=) Nothing
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
@@ -438,18 +471,17 @@ map accessor change =
 {-| Use prism to reconstruct.
 -}
 new : (Optic ps ls a b a b -> Optic Y ls s t a b) -> b -> t
-new accessor s =
+new accessor =
     (Optic
         { view = \_ -> void "`view` should never be called from `name`"
         , list = \_ -> void "`list` should never be called from `name`"
         , over = \_ -> void "`over` should never be called from `name`"
-        , make = \( _, b ) -> b
+        , make = \b -> b
         , name = ""
         }
         |> accessor
         |> internal
     ).make
-        ( (), s )
 
 
 name : (Optic pr ls a b x y -> Optic pr ls s t x y) -> String

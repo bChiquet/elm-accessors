@@ -22,16 +22,16 @@ import SelectList exposing (SelectList)
         { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 3 }, { bar = 4 }]
         }
 
-    get (L.foo << SL.each << L.bar) listRecord
-    --> SelectList.fromLists [1] 2 [3, 4]
+    all (L.foo << SL.each << L.bar) listRecord
+    --> [1, 2, 3, 4]
 
     map (L.foo << SL.each << L.bar) ((+) 1) listRecord
     --> { foo = SelectList.fromLists [{ bar = 2 }] { bar = 3 } [{ bar = 4 }, { bar = 5 }] }
 
 -}
-each : Optic attr view over -> Optic (SelectList attr) (SelectList view) (SelectList over)
+each : Optic pr ls a b x y -> Base.Traversal (SelectList a) (SelectList b) x y
 each =
-    Base.traversal ":[_]" SelectList.map SelectList.map
+    Base.traversal ":[_]" SelectList.toList SelectList.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -46,30 +46,31 @@ each =
         { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 3 }, { bar = 4 }]
         }
 
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne : (Int, { bar : Int }) -> { bar : Int }
     multiplyIfGTOne ( idx, ({ bar } as rec) ) =
         if idx > 0 then
-            ( idx, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (idx, rec)
+            rec
 
 
-    get (L.foo << SL.each_) listRecord
-    --> SelectList.fromLists [(0, {bar = 1})] (1, {bar = 2}) [(2, {bar = 3}), (3, {bar = 4})]
+    all (L.foo << SL.each_) listRecord
+    --> [(0, {bar = 1}), (1, {bar = 2}), (2, {bar = 3}), (3, {bar = 4})]
 
     map (L.foo << SL.each_) multiplyIfGTOne listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
 
-    get (L.foo << SL.each_ << snd << L.bar) listRecord
-    --> SelectList.fromLists [1] 2 [3, 4]
+    all (L.foo << SL.each_ << ixL L.bar) listRecord
+    --> [1, 2, 3, 4]
 
-    map (L.foo << SL.each_ << snd << L.bar) ((+) 1) listRecord
+    map (L.foo << SL.each_ << ixL L.bar) ((+) 1) listRecord
     --> {foo = SelectList.fromLists [{bar = 2}] {bar = 3} [{bar = 4}, {bar = 5}]}
 
 -}
-each_ : Optic ( Int, attr ) view ( ignored, over ) -> Optic (SelectList attr) (SelectList view) (SelectList over)
+each_ : Optic pr ls ( Int, a ) c x y -> Base.Traversal (SelectList a) (SelectList c) x y
 each_ =
     Base.traversal "[#]"
+        (SelectList.toList >> List.indexedMap Tuple.pair)
         (\fn ls ->
             let
                 ( before, current, after ) =
@@ -82,19 +83,6 @@ each_ =
             SelectList.fromLists (List.indexedMap (\idx -> Tuple.pair idx >> fn) before)
                 (fn ( currentIdx, current ))
                 (List.indexedMap (\idx -> Tuple.pair (idx + (currentIdx + 1)) >> fn) after)
-        )
-        (\fn ls ->
-            let
-                ( before, current, after ) =
-                    SelectList.toTuple ls
-
-                currentIdx : Int
-                currentIdx =
-                    SelectList.index ls
-            in
-            SelectList.fromLists (List.indexedMap (\idx -> Tuple.pair idx >> fn >> Tuple.second) before)
-                (fn ( currentIdx, current ) |> Tuple.second)
-                (List.indexedMap (\idx -> Tuple.pair (idx + (currentIdx + 1)) >> fn >> Tuple.second) after)
         )
 
 
@@ -127,6 +115,6 @@ each_ =
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 3 }, { bar = 4 }] }
 
 -}
-selected : Optic attr view attr -> Optic (SelectList attr) view (SelectList attr)
+selected : Optic pr ls b b x y -> Base.Lens ls (SelectList b) (SelectList b) x y
 selected =
-    Base.lens "[^]" SelectList.selected SelectList.updateSelected
+    Base.lens "[^]" SelectList.selected (\rec new -> SelectList.updateSelected (\_ -> new) rec)
