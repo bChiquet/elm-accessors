@@ -60,10 +60,10 @@ each =
     map (L.foo << SL.each_) multiplyIfGTOne listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
 
-    all (L.foo << SL.each_ << ixL L.bar) listRecord
+    all (L.foo << SL.each_ << ixd L.bar) listRecord
     --> [1, 2, 3, 4]
 
-    map (L.foo << SL.each_ << ixL L.bar) ((+) 1) listRecord
+    map (L.foo << SL.each_ << ixd L.bar) ((+) 1) listRecord
     --> {foo = SelectList.fromLists [{bar = 2}] {bar = 3} [{bar = 4}, {bar = 5}]}
 
 -}

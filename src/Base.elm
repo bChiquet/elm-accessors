@@ -2,7 +2,7 @@ module Base exposing
     ( Optic(..), Traversal, Lens, Prism, Iso, Y
     , SimpleOptic, SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
-    , ixT, ixL, ixP, from
+    , ixd, from
     , get, all, try, has, map, set, new, name
     , internal
     )
@@ -25,7 +25,7 @@ Accessors are built using these functions:
 
 # Accessor Lifters for Indexed operations
 
-@docs ixT, ixL, ixP, from
+@docs ixd, from
 
 
 # Actions
@@ -239,54 +239,34 @@ iso n sa bt (Optic sub) =
         }
 
 
-ixT :
-    (Optic pr ls x y x y -> Optic pr ls b t x y)
-    -> Optic a c x y d e
-    -> Traversal ( idx, b ) t d e
-ixT t =
-    traversal (name t)
-        (\( _, rec ) -> all t rec)
-        (\fn -> Tuple.mapSecond (map t fn) >> Tuple.second)
-
-
-ixL :
-    (Optic pr Y x z x z -> Optic pr Y a b x z)
-    -> Optic c ls x z d y
-    -> Lens ls ( idx, a ) b d y
-ixL l =
-    lens (name l)
-        (\( _, rec ) -> get l rec)
-        (\rec val -> Tuple.mapSecond (set l val) rec |> Tuple.second)
-
-
-ixP :
-    (Optic Y ls value rte value rte -> Optic Y ls b t value rte)
-    -> Optic pr a value rte x y
-    -> Prism pr ( idx, b ) t x y
-ixP p =
-    prism (name p)
-        (\b -> new p b)
-        (\( _, s ) ->
-            case try p s of
-                Just v ->
-                    Ok v
-
-                Nothing ->
-                    Err (map p (\_ -> void "make an ix") s)
-        )
-
-
-
--- from : (Iso pr ls a b a b -> Iso pr ls s t a b) -> (Iso pr ls t s t s -> Iso pr ls b a t s)
+ixd :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> (Optic pr ls a b x y -> Traversal ( ix, s ) t x y)
+ixd p =
+    traversal (name p)
+        (\( _, b ) -> all p b)
+        (\fn -> Tuple.mapSecond (map p fn) >> Tuple.second)
 
 
 from :
     (Optic pr ls a b a b -> Iso pr ls s t a b)
     -> (Optic pr ls t s t s -> Iso pr ls b a t s)
-from i =
-    iso (String.reverse (name i))
-        (new i)
-        (get i)
+from accessor =
+    let
+        i =
+            Optic
+                { view = identity
+                , make = identity
+                , over = identity
+                , list = List.singleton
+                , name = ""
+                }
+                |> accessor
+                |> internal
+    in
+    iso (String.reverse i.name)
+        i.make
+        i.view
 
 
 
@@ -333,7 +313,7 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 
 
 get :
-    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    (Optic pr ls a b a b -> Optic pr Y s t a b)
     -> s
     -> a
 get accessor =
@@ -483,7 +463,7 @@ map accessor change =
 
 {-| Use prism to reconstruct.
 -}
-new : (Optic pr ls a b a b -> Optic pr ls s t a b) -> b -> t
+new : (Optic pr ls a b a b -> Optic Y ls s t a b) -> b -> t
 new accessor =
     (Optic
         { view = \_ -> void "`view` should never be called from `name`"

@@ -3,7 +3,7 @@ module Accessors exposing
     , Traversal, Lens, Prism, Iso
     , SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
-    , ixT, ixL, ixP, from
+    , ixd, from
     , get, all, try, has, map, set, new, name
     , just_, ok_, err_
     , values, keyed, key, keyI, key_
@@ -38,7 +38,7 @@ Accessors are built using these functions:
 
 ## Lifters for composing w/ indexed optics
 
-@docs ixT, ixL, ixP, from
+@docs ixd, from
 
 
 ## Action functions
@@ -222,28 +222,11 @@ traversal =
 -- Lifters for composing w/ indexed optics
 
 
-ixT :
-    (Optic pr ls x y x y -> Optic pr ls b t x y)
-    -> Optic a c x y d e
-    -> Traversal ( idx, b ) t d e
-ixT =
-    Base.ixT
-
-
-ixL :
-    (Optic pr Y x b x b -> Optic pr Y a t x b)
-    -> Optic c ls x b d y
-    -> Lens ls ( idx, a ) t d y
-ixL =
-    Base.ixL
-
-
-ixP :
-    (Optic Y ls value rte value rte -> Optic Y ls b t value rte)
-    -> Optic pr a value rte x y
-    -> Prism pr ( idx, b ) t x y
-ixP =
-    Base.ixP
+ixd :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> (Optic pr ls a b x y -> Traversal ( ix, s ) t x y)
+ixd =
+    Base.ixd
 
 
 from :
@@ -268,7 +251,7 @@ get (foo << bar) myRecord
 ```
 
 -}
-get : (Optic pr ls a b a b -> Optic pr ls s t a b) -> s -> a
+get : (Optic pr ls a b a b -> Optic pr Y s t a b) -> s -> a
 get =
     Base.get
 
@@ -373,7 +356,7 @@ set =
 
 {-| Use prism to reconstruct.
 -}
-new : (Optic pr ls a b a b -> Optic pr ls s t a b) -> b -> t
+new : (Optic pr ls a b a b -> Optic Y ls s t a b) -> b -> t
 new =
     Base.new
 
@@ -555,10 +538,10 @@ alias for [`Array.Accessors.each_`](Array-Accessors#each_)
     map (L.foo << everyIdx) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
-    all (L.foo << everyIdx << ixL L.bar) arrayRecord
+    all (L.foo << everyIdx << ixd L.bar) arrayRecord
     --> [2, 3, 4]
 
-    map (L.foo << everyIdx << ixL L.bar) ((+) 1) arrayRecord
+    map (L.foo << everyIdx << ixd L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
@@ -715,10 +698,10 @@ alias for [`Dict.Accessors.each_`](Dict-Accessors#each_)
     map (L.foo << keyed) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
-    all (L.foo << keyed << ixL L.bar) dictRecord
+    all (L.foo << keyed << ixd L.bar) dictRecord
     --> [2, 3, 4]
 
-    map (L.foo << keyed << ixL L.bar) ((+) 1) dictRecord
+    map (L.foo << keyed << ixd L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}

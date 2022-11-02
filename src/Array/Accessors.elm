@@ -66,10 +66,10 @@ each =
     map (L.foo << Array.each_) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
-    all (L.foo << Array.each_ << ixL L.bar) arrayRecord
+    all (L.foo << Array.each_ << ixd L.bar) arrayRecord
     --> [2, 3, 4]
 
-    map (L.foo << Array.each_ << ixL L.bar) ((+) 1) arrayRecord
+    map (L.foo << Array.each_ << ixd L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}

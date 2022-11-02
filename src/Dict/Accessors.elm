@@ -72,10 +72,10 @@ each =
     map (L.foo << Dict.each_) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
-    all (L.foo << Dict.each_ << ixL L.bar) dictRecord
+    all (L.foo << Dict.each_ << ixd L.bar) dictRecord
     --> [2, 3, 4]
 
-    map (L.foo << Dict.each_ << ixL L.bar) ((+) 1) dictRecord
+    map (L.foo << Dict.each_ << ixd L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
