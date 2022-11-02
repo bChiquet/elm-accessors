@@ -3,7 +3,7 @@ module Accessors exposing
     , Traversal, Lens, Prism, Iso
     , SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
-    , ixT, ixL, ixP
+    , ixT, ixL, ixP, from
     , get, all, try, has, map, set, new, name
     , just_, ok_, err_
     , values, keyed, key, keyI, key_
@@ -38,7 +38,7 @@ Accessors are built using these functions:
 
 ## Lifters for composing w/ indexed optics
 
-@docs ixT, ixL, ixP
+@docs ixT, ixL, ixP, from
 
 
 ## Action functions
@@ -246,6 +246,13 @@ ixP =
     Base.ixP
 
 
+from :
+    (Optic pr ls a b a b -> Iso pr ls s t a b)
+    -> (Optic pr ls t s t s -> Iso pr ls b a t s)
+from =
+    Base.from
+
+
 
 -- Actions
 
@@ -261,7 +268,7 @@ get (foo << bar) myRecord
 ```
 
 -}
-get : (Optic pr ls a b a b -> Optic pr Y s t a b) -> s -> a
+get : (Optic pr ls a b a b -> Optic pr ls s t a b) -> s -> a
 get =
     Base.get
 
@@ -366,14 +373,14 @@ set =
 
 {-| Use prism to reconstruct.
 -}
-new : (Optic ps ls a b a b -> Optic Y ls s t a b) -> b -> t
+new : (Optic pr ls a b a b -> Optic pr ls s t a b) -> b -> t
 new =
     Base.new
 
 
 {-| This function gives the name of the function as a string...
 -}
-name : (Optic pr ls a b x y -> Optic pr ls s t x y) -> String
+name : (Optic pr ls a b x y -> Optic pr ls s t a b) -> String
 name =
     Base.name
 

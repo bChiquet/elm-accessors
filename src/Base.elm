@@ -2,7 +2,7 @@ module Base exposing
     ( Optic(..), Traversal, Lens, Prism, Iso, Y
     , SimpleOptic, SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
-    , ixT, ixL, ixP
+    , ixT, ixL, ixP, from
     , get, all, try, has, map, set, new, name
     , internal
     )
@@ -25,7 +25,7 @@ Accessors are built using these functions:
 
 # Accessor Lifters for Indexed operations
 
-@docs ixT, ixL, ixP
+@docs ixT, ixL, ixP, from
 
 
 # Actions
@@ -221,6 +221,24 @@ traversal n sa abst (Optic sub) =
         }
 
 
+{-| An isomorphism constructor.
+-}
+iso : String -> (s -> a) -> (b -> t) -> Optic pr ls a b x y -> Iso pr ls s t x y
+iso n sa bt (Optic sub) =
+    let
+        over_ : (a -> b) -> s -> t
+        over_ f =
+            bt << f << sa
+    in
+    Optic
+        { view = sub.view << sa
+        , list = sa >> List.singleton >> List.concatMap sub.list
+        , make = bt << sub.make
+        , over = sub.over >> over_
+        , name = n ++ sub.name
+        }
+
+
 ixT :
     (Optic pr ls x y x y -> Optic pr ls b t x y)
     -> Optic a c x y d e
@@ -258,22 +276,17 @@ ixP p =
         )
 
 
-{-| An isomorphism constructor.
--}
-iso : String -> (s -> a) -> (b -> t) -> Optic pr ls a b x y -> Iso pr ls s t x y
-iso n sa bt (Optic sub) =
-    let
-        over_ : (a -> b) -> s -> t
-        over_ f =
-            bt << f << sa
-    in
-    Optic
-        { view = sub.view << sa
-        , list = sa >> List.singleton >> List.concatMap sub.list
-        , make = bt << sub.make
-        , over = sub.over >> over_
-        , name = n ++ sub.name
-        }
+
+-- from : (Iso pr ls a b a b -> Iso pr ls s t a b) -> (Iso pr ls t s t s -> Iso pr ls b a t s)
+
+
+from :
+    (Optic pr ls a b a b -> Iso pr ls s t a b)
+    -> (Optic pr ls t s t s -> Iso pr ls b a t s)
+from i =
+    iso (String.reverse (name i))
+        (new i)
+        (get i)
 
 
 
@@ -320,7 +333,7 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
 
 
 get :
-    (Optic pr ls a b a b -> Optic pr Y s t a b)
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
     -> s
     -> a
 get accessor =
@@ -470,7 +483,7 @@ map accessor change =
 
 {-| Use prism to reconstruct.
 -}
-new : (Optic ps ls a b a b -> Optic Y ls s t a b) -> b -> t
+new : (Optic pr ls a b a b -> Optic pr ls s t a b) -> b -> t
 new accessor =
     (Optic
         { view = \_ -> void "`view` should never be called from `name`"
@@ -484,7 +497,7 @@ new accessor =
     ).make
 
 
-name : (Optic pr ls a b x y -> Optic pr ls s t x y) -> String
+name : (Optic pr ls a b x y -> Optic pr ls s t a b) -> String
 name accessor =
     (Optic
         { view = \_ -> void "`view` should never be called from `name`"
