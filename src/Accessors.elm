@@ -10,7 +10,6 @@ module Accessors exposing
     , each, eachIdx, at
     , every, everyIdx, ix
     , fst, snd
-    , Y
     )
 
 {-| Accessors are a way of operating on nested data in Elm that doesn't require gobs of boilerplate.
@@ -76,10 +75,6 @@ import Tuple.Accessors as Tuple
 
 type alias Optic pr ls s t a b =
     Base.Optic pr ls s t a b
-
-
-type alias Y =
-    Base.Y
 
 
 
@@ -150,8 +145,7 @@ iso :
     String
     -> (s -> a)
     -> (b -> t)
-    -> Base.Optic pr ls a b x y
-    -> Base.Iso pr ls s t x y
+    -> (Optic pr ls a b x y -> Iso pr ls s t x y)
 iso =
     Base.iso
 
@@ -172,8 +166,7 @@ lens :
     String
     -> (s -> a)
     -> (s -> b -> t)
-    -> Optic pr ls a b x y
-    -> Base.Lens ls s t x y
+    -> (Optic pr ls a b x y -> Lens ls s t x y)
 lens =
     Base.lens
 
@@ -192,8 +185,7 @@ prism :
     String
     -> (b -> t)
     -> (s -> Result t a)
-    -> Base.Optic pr ls a b x y
-    -> Base.Prism pr s t x y
+    -> (Optic pr ls a b x y -> Prism pr s t x y)
 prism =
     Base.prism
 
@@ -251,7 +243,7 @@ get (foo << bar) myRecord
 ```
 
 -}
-get : (Optic pr ls a b a b -> Optic pr Y s t a b) -> s -> a
+get : (Optic pr ls a b a b -> Optic pr () s t a b) -> s -> a
 get =
     Base.get
 
@@ -356,7 +348,7 @@ set =
 
 {-| Use prism to reconstruct.
 -}
-new : (Optic pr ls a b a b -> Optic Y ls s t a b) -> b -> t
+new : (Optic pr ls a b a b -> Optic () ls s t a b) -> b -> t
 new =
     Base.new
 

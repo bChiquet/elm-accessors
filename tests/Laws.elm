@@ -4,7 +4,6 @@ import Accessors as A
     exposing
         ( Iso
         , Optic
-        , Y
         , from
         , get
         , iso
@@ -161,7 +160,7 @@ isSetter l fzr fnFzr val =
         ]
 
 
-isLens : (Optic pr Y b b b b -> Optic pr Y a a b b) -> Fuzzer a -> Fuzzer (b -> b) -> Fuzzer b -> Test
+isLens : (Optic pr () b b b b -> Optic pr () a a b b) -> Fuzzer a -> Fuzzer (b -> b) -> Fuzzer b -> Test
 isLens l fzr valFn val =
     describe ("isLens: " ++ A.name l)
         [ isSetter l fzr valFn val
@@ -177,7 +176,7 @@ isLens l fzr valFn val =
         ]
 
 
-isPrism : (Optic Y ls a a a a -> Optic Y ls s s a a) -> Fuzzer s -> Fuzzer a -> Test
+isPrism : (Optic () ls a a a a -> Optic () ls s s a a) -> Fuzzer s -> Fuzzer a -> Test
 isPrism pr fzrS fzrA =
     describe ("isPrism: " ++ A.name pr)
         [ fuzz (Fuzz.tuple ( fzrS, fzrA ))
@@ -192,7 +191,7 @@ isPrism pr fzrS fzrA =
 
 
 isIso :
-    (Optic Y Y a a a a -> Optic Y Y s s a a)
+    (Optic () () a a a a -> Optic () () s s a a)
     ->
         { a : Fuzzer a
         , endo : Fuzzer (a -> a)
@@ -223,32 +222,32 @@ setter_set_set l s a b =
     A.set l b (A.set l a s) == A.set l b s
 
 
-lens_set_get : (Optic pr Y a a a a -> Optic pr Y b b a a) -> b -> Bool
+lens_set_get : (Optic pr () a a a a -> Optic pr () b b a a) -> b -> Bool
 lens_set_get l s =
     A.set l (A.get l s) s == s
 
 
-lens_get_set : (Optic pr Y c c c c -> Optic pr Y t t c c) -> t -> c -> Bool
+lens_get_set : (Optic pr () c c c c -> Optic pr () t t c c) -> t -> c -> Bool
 lens_get_set l s a =
     A.get l (A.set l a s) == a
 
 
-prism_yin : (Optic Y ls a a a a -> Optic Y ls s s a a) -> a -> Bool
+prism_yin : (Optic () ls a a a a -> Optic () ls s s a a) -> a -> Bool
 prism_yin l a =
     try l (new l a) == Just a
 
 
-prism_yang : (Optic Y ls a a a a -> Optic Y ls s s a a) -> s -> Bool
+prism_yang : (Optic () ls a a a a -> Optic () ls s s a a) -> s -> Bool
 prism_yang l s =
     (Maybe.withDefault s <| Maybe.map (new l) (try l s)) == s
 
 
-iso_hither : (Iso pr Y a a a a -> Iso pr Y s s a a) -> s -> Bool
+iso_hither : (Iso pr () a a a a -> Iso pr () s s a a) -> s -> Bool
 iso_hither l s =
     (get (from l) <| get l s) == s
 
 
-iso_yon : (Iso pr Y a a a a -> Iso pr Y s s a a) -> a -> Bool
+iso_yon : (Iso pr () a a a a -> Iso pr () s s a a) -> a -> Bool
 iso_yon l a =
     (get l <| get (from l) a) == a
 

@@ -1,5 +1,5 @@
 module Base exposing
-    ( Optic(..), Traversal, Lens, Prism, Iso, Y
+    ( Optic(..), Traversal, Lens, Prism, Iso
     , SimpleOptic, SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
     , traversal, lens, prism, iso
     , ixd, from
@@ -12,7 +12,7 @@ module Base exposing
 
 # Optics
 
-@docs Optic, Traversal, Lens, Prism, Iso, Y
+@docs Optic, Traversal, Lens, Prism, Iso
 @docs SimpleOptic, SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
 
 
@@ -72,28 +72,22 @@ type alias Y =
     ()
 
 
-{-| Type-level "no". Is a 0 type.
--}
-type N
-    = N Never
-
-
 {-| The lens is "not a prism".
 -}
 type alias Lens ls s t a b =
-    Optic N ls s t a b
+    Optic Never ls s t a b
 
 
 {-| The prism is "not a lens".
 -}
 type alias Prism pr s t a b =
-    Optic pr N s t a b
+    Optic pr Never s t a b
 
 
 {-| The traversal is neither "lens" or "prism".
 -}
 type alias Traversal s t a b =
-    Optic N N s t a b
+    Optic Never Never s t a b
 
 
 {-| The isomorphism is both "lens" and "prism".
@@ -147,19 +141,20 @@ lens :
     -> (s -> b -> t)
     -- Any optic composed with a Lens becomes "at least a Lens".
     -> (Optic pr ls a b x y -> Lens ls s t x y)
-lens n sa sbt (Optic sub) =
+lens n sa sbt sub =
     let
         over_ : (a -> b) -> s -> t
         over_ f s =
             s |> sa |> f |> sbt s
     in
     Optic
-        { list = sa >> List.singleton >> List.concatMap sub.list
-        , view = sub.view << sa
-        , make = \_ -> void "Can't call `make` with a Lens"
-        , over = sub.over >> over_
-        , name = n ++ sub.name
+        { list = sa >> List.singleton
+        , view = sa
+        , make = void "Can't call `make` with a Lens"
+        , over = over_
+        , name = n
         }
+        |> o sub
 
 
 {-| A prism constructor.
@@ -177,23 +172,23 @@ prism :
     -> (b -> t)
     -> (s -> Result t a)
     -> (Optic pr ls a b x y -> Prism pr s t x y)
-prism n bt sta (Optic sub) =
+prism n bt sta sub =
     let
         over_ : (a -> b) -> s -> t
         over_ f =
             sta >> Result.map (f >> bt) >> mergeResult
     in
     Optic
-        { view = \_ -> void "Can't call `view` with a Prism"
+        { view = void "Can't call `view` with a Prism"
         , list =
             sta
                 >> Result.map (\a -> [ a ])
                 >> Result.withDefault []
-                >> List.concatMap sub.list
-        , make = bt << sub.make
-        , over = sub.over >> over_
-        , name = n ++ sub.name
+        , make = bt
+        , over = over_
+        , name = n
         }
+        |> o sub
 
 
 mergeResult : Result a a -> a
@@ -211,31 +206,44 @@ traversal :
     -> (s -> List a)
     -> ((a -> b) -> s -> t)
     -> (Optic pr ls a b x y -> Traversal s t x y)
-traversal n sa abst (Optic sub) =
+traversal n sa abst sub =
     Optic
-        { view = \_ -> void "Can't call `view` with a Traversal"
-        , make = \_ -> void "Can't call `make` with a Traversal"
-        , list = sa >> List.concatMap sub.list
-        , over = sub.over >> abst
-        , name = n ++ sub.name
+        { view = void "Can't call `view` with a Traversal"
+        , make = void "Can't call `make` with a Traversal"
+        , list = sa
+        , over = abst
+        , name = n
         }
+        |> o sub
 
 
 {-| An isomorphism constructor.
 -}
 iso : String -> (s -> a) -> (b -> t) -> Optic pr ls a b x y -> Iso pr ls s t x y
-iso n sa bt (Optic sub) =
+iso n sa bt sub =
     let
         over_ : (a -> b) -> s -> t
         over_ f =
             bt << f << sa
     in
     Optic
-        { view = sub.view << sa
-        , list = sa >> List.singleton >> List.concatMap sub.list
-        , make = bt << sub.make
-        , over = sub.over >> over_
-        , name = n ++ sub.name
+        { view = sa
+        , list = sa >> List.singleton
+        , make = bt
+        , over = over_
+        , name = n
+        }
+        |> o sub
+
+
+o : Optic any thing a b x y -> Optic pr ls s t a b -> Optic pr ls s t x y
+o (Optic attribute) (Optic structure) =
+    Optic
+        { list = structure.list >> List.concatMap attribute.list
+        , view = structure.view >> attribute.view
+        , make = structure.make << attribute.make
+        , over = structure.over << attribute.over
+        , name = structure.name ++ attribute.name
         }
 
 
@@ -318,9 +326,9 @@ get :
     -> a
 get accessor =
     (Optic
-        { make = \_ -> void "`make` should never be called from `get`"
-        , over = \_ -> void "`over` should never be called from `get`"
-        , list = \_ -> void "`list` should never be called from `get`"
+        { make = void "`make` should never be called from `get`"
+        , over = void "`over` should never be called from `get`"
+        , list = void "`list` should never be called from `get`"
         , view = identity
         , name = ""
         }
@@ -354,9 +362,9 @@ has :
     -> Bool
 has accessor =
     (Optic
-        { make = \_ -> void "`make` should never be called from `has`"
-        , over = \_ -> void "`over` should never be called from `has`"
-        , view = \_ -> void "`view` should never be called from `has`"
+        { make = void "`make` should never be called from `has`"
+        , over = void "`over` should never be called from `has`"
+        , view = void "`view` should never be called from `has`"
         , list = List.singleton
         , name = ""
         }
@@ -384,9 +392,9 @@ try :
     -> Maybe a
 try accessor =
     (Optic
-        { make = \_ -> void "`make` should never be called from `try`"
-        , over = \_ -> void "`over` should never be called from `try`"
-        , view = \_ -> void "`view` should never be called from `try`"
+        { make = void "`make` should never be called from `try`"
+        , over = void "`over` should never be called from `try`"
+        , view = void "`view` should never be called from `try`"
         , list = List.singleton
         , name = ""
         }
@@ -413,9 +421,9 @@ all :
     -> List a
 all accessor =
     (Optic
-        { make = \_ -> void "`make` should never be called from `all`"
-        , over = \_ -> void "`over` should never be called from `all`"
-        , view = \_ -> void "`view` should never be called from `all`"
+        { make = void "`make` should never be called from `all`"
+        , over = void "`over` should never be called from `all`"
+        , view = void "`view` should never be called from `all`"
         , list = List.singleton
         , name = ""
         }
@@ -430,9 +438,9 @@ set :
     -> (s -> t)
 set accessor attr =
     (Optic
-        { view = \_ -> void "`view` should never be called from `set`"
-        , make = \_ -> void "`make` should never be called from `set`"
-        , list = \_ -> void "`list` should never be called from `set`"
+        { view = void "`view` should never be called from `set`"
+        , make = void "`make` should never be called from `set`"
+        , list = void "`list` should never be called from `set`"
         , over = identity
         , name = ""
         }
@@ -449,9 +457,9 @@ map :
     -> t
 map accessor change =
     (Optic
-        { view = \_ -> void "`view` should never be called from `over`"
-        , make = \_ -> void "`make` should never be called from `over`"
-        , list = \_ -> void "`list` should never be called from `over`"
+        { view = void "`view` should never be called from `over`"
+        , make = void "`make` should never be called from `over`"
+        , list = void "`list` should never be called from `over`"
         , over = identity
         , name = ""
         }
@@ -466,9 +474,9 @@ map accessor change =
 new : (Optic pr ls a b a b -> Optic Y ls s t a b) -> b -> t
 new accessor =
     (Optic
-        { view = \_ -> void "`view` should never be called from `name`"
-        , list = \_ -> void "`list` should never be called from `name`"
-        , over = \_ -> void "`over` should never be called from `name`"
+        { view = void "`view` should never be called from `name`"
+        , list = void "`list` should never be called from `name`"
+        , over = void "`over` should never be called from `name`"
         , make = \b -> b
         , name = ""
         }
@@ -480,10 +488,10 @@ new accessor =
 name : (Optic pr ls a b x y -> Optic pr ls s t a b) -> String
 name accessor =
     (Optic
-        { view = \_ -> void "`view` should never be called from `name`"
-        , make = \_ -> void "`make` should never be called from `name`"
-        , list = \_ -> void "`list` should never be called from `name`"
-        , over = \_ -> void "`over` should never be called from `name`"
+        { view = void "`view` should never be called from `name`"
+        , make = void "`make` should never be called from `name`"
+        , list = void "`list` should never be called from `name`"
+        , over = void "`over` should never be called from `name`"
         , name = ""
         }
         |> accessor
@@ -495,8 +503,8 @@ name accessor =
 -- Helper
 
 
-void : String -> runTimeError
-void s =
+void : String -> any -> runTimeError
+void s _ =
     let
         unoptimizedRecursion : String -> runTimeError
         unoptimizedRecursion str =
