@@ -1,4 +1,10 @@
-module Result.Accessors exposing (err_, ok_)
+module Result.Accessors exposing (ok_, err_)
+
+{-|
+
+@docs ok_, err_
+
+-}
 
 import Base exposing (Optic, Prism)
 import Result exposing (Result(..))

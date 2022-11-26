@@ -1,5 +1,11 @@
 module Tuple.Accessors exposing (fst, snd)
 
+{-|
+
+@docs fst, snd
+
+-}
+
 import Base exposing (Lens, Optic)
 
 

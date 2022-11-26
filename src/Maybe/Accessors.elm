@@ -1,5 +1,11 @@
 module Maybe.Accessors exposing (just_)
 
+{-|
+
+@docs just_
+
+-}
+
 import Base exposing (Optic, Prism)
 
 

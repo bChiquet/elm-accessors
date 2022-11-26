@@ -51,7 +51,7 @@ specific action on data using that accessor.
 ## Common Optics to mitigate `import` noise. Not everything is re-exported.
 
 @docs just_, ok_, err_
-@docs values, keyed, key, keyI, keyF, key_
+@docs values, keyed, key, keyI, key_
 @docs each, eachIdx, at
 @docs every, everyIdx, ix
 @docs fst, snd
