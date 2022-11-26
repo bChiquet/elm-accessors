@@ -181,7 +181,7 @@ prism n bt sta sub =
         { view = void "Can't call `view` with a Prism"
         , list =
             sta
-                >> Result.map (\a -> [ a ])
+                >> Result.map List.singleton
                 >> Result.withDefault []
         , make = bt
         , over = over_

@@ -253,8 +253,8 @@ iso_yon l a =
 
 
 
--- traverse_pure : LensLike' f s a -> s -> Bool
--- traverse_pure l s = l pure s == (pure s : f s)
+-- traverse_pure : Applicative f => LensLike' f s a -> s -> Bool
+-- traverse_pure l s = l pure s == (pure s :: f s) -- :: is an inline type annotation
 -- traverse_pureMaybe : Eq s => LensLike' Maybe s a -> s -> Bool
 -- traverse_pureMaybe = traverse_pure
 -- traverse_pureList : Eq s => LensLike' [] s a -> s -> Bool
