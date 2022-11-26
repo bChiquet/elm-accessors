@@ -73,6 +73,8 @@ import Tuple.Accessors as Tuple
 -- Optic
 
 
+{-| Any optic
+-}
 type alias Optic pr ls s t a b =
     Base.Optic pr ls s t a b
 
@@ -214,6 +216,8 @@ traversal =
 -- Lifters for composing w/ indexed optics
 
 
+{-| Lift an optic over an indexed traversal
+-}
 ixd :
     (Optic pr ls a b a b -> Optic pr ls s t a b)
     -> (Optic pr ls a b x y -> Traversal ( ix, s ) t x y)
@@ -221,6 +225,8 @@ ixd =
     Base.ixd
 
 
+{-| Flip an Isomorphism
+-}
 from :
     (Optic pr ls a b a b -> Iso pr ls s t a b)
     -> (Optic pr ls t s t s -> Iso pr ls b a t s)
