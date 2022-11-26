@@ -259,7 +259,7 @@ suite =
                 myFoo =
                     lens ".foo" .foo (\rec val -> { rec | foo = val })
               in
-              describe "makeOneToOne"
+              describe "lens"
                 [ test "get" <|
                     \_ ->
                         get (myFoo << L.bar) nestedRecord
@@ -286,7 +286,7 @@ suite =
                 myOnEach =
                     traversal "[]" identity List.map
               in
-              describe "makeOneToN"
+              describe "traversal"
                 [ test "get" <|
                     \_ ->
                         all (L.bar << myOnEach << L.foo) recordWithList

@@ -4,7 +4,6 @@ module Base exposing
     , traversal, lens, prism, iso
     , ixd, from
     , get, all, try, has, map, set, new, name
-    , internal
     )
 
 {-|
@@ -154,7 +153,7 @@ lens n sa sbt sub =
         , over = over_
         , name = n
         }
-        |> o sub
+        |> dot sub
 
 
 {-| A prism constructor.
@@ -188,7 +187,7 @@ prism n bt sta sub =
         , over = over_
         , name = n
         }
-        |> o sub
+        |> dot sub
 
 
 mergeResult : Result a a -> a
@@ -214,7 +213,7 @@ traversal n sa abst sub =
         , over = abst
         , name = n
         }
-        |> o sub
+        |> dot sub
 
 
 {-| An isomorphism constructor.
@@ -233,11 +232,11 @@ iso n sa bt sub =
         , over = over_
         , name = n
         }
-        |> o sub
+        |> dot sub
 
 
-o : Optic any thing a b x y -> Optic pr ls s t a b -> Optic pr ls s t x y
-o (Optic attribute) (Optic structure) =
+dot : Optic any thing a b x y -> Optic pr ls s t a b -> Optic pr ls s t x y
+dot (Optic attribute) (Optic structure) =
     Optic
         { list = structure.list >> List.concatMap attribute.list
         , view = structure.view >> attribute.view
@@ -262,19 +261,24 @@ from :
 from accessor =
     let
         i =
-            Optic
-                { view = identity
-                , make = identity
-                , over = identity
-                , list = List.singleton
-                , name = ""
-                }
+            id
                 |> accessor
                 |> internal
     in
     iso (String.reverse i.name)
         i.make
         i.view
+
+
+id : Optic pr ls a b a b
+id =
+    Optic
+        { view = identity
+        , make = identity
+        , over = identity
+        , list = List.singleton
+        , name = ""
+        }
 
 
 
@@ -325,13 +329,7 @@ get :
     -> s
     -> a
 get accessor =
-    (Optic
-        { make = void "`make` should never be called from `get`"
-        , over = void "`over` should never be called from `get`"
-        , list = void "`list` should never be called from `get`"
-        , view = identity
-        , name = ""
-        }
+    (id
         |> accessor
         |> internal
     ).view
@@ -360,19 +358,8 @@ has :
     (Optic pr ls a b a b -> Optic pr ls s t a b)
     -> s
     -> Bool
-has accessor =
-    (Optic
-        { make = void "`make` should never be called from `has`"
-        , over = void "`over` should never be called from `has`"
-        , view = void "`view` should never be called from `has`"
-        , list = List.singleton
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).list
-        >> List.head
-        >> (/=) Nothing
+has accessor s =
+    try accessor s /= Nothing
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
@@ -391,17 +378,7 @@ try :
     -> s
     -> Maybe a
 try accessor =
-    (Optic
-        { make = void "`make` should never be called from `try`"
-        , over = void "`over` should never be called from `try`"
-        , view = void "`view` should never be called from `try`"
-        , list = List.singleton
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).list
-        >> List.head
+    (id |> accessor |> internal).list >> List.head
 
 
 {-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
@@ -420,16 +397,7 @@ all :
     -> s
     -> List a
 all accessor =
-    (Optic
-        { make = void "`make` should never be called from `all`"
-        , over = void "`over` should never be called from `all`"
-        , view = void "`view` should never be called from `all`"
-        , list = List.singleton
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).list
+    (id |> accessor |> internal).list
 
 
 set :
@@ -437,16 +405,7 @@ set :
     -> b
     -> (s -> t)
 set accessor attr =
-    (Optic
-        { view = void "`view` should never be called from `set`"
-        , make = void "`make` should never be called from `set`"
-        , list = void "`list` should never be called from `set`"
-        , over = identity
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).over
+    (id |> accessor |> internal).over
         (\_ -> attr)
 
 
@@ -455,48 +414,21 @@ map :
     -> (a -> b)
     -> s
     -> t
-map accessor change =
-    (Optic
-        { view = void "`view` should never be called from `over`"
-        , make = void "`make` should never be called from `over`"
-        , list = void "`list` should never be called from `over`"
-        , over = identity
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).over
-        change
+map accessor =
+    (id |> accessor |> internal).over
 
 
 {-| Use prism to reconstruct.
 -}
 new : (Optic pr ls a b a b -> Optic Y ls s t a b) -> b -> t
 new accessor =
-    (Optic
-        { view = void "`view` should never be called from `name`"
-        , list = void "`list` should never be called from `name`"
-        , over = void "`over` should never be called from `name`"
-        , make = \b -> b
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).make
+    (id |> accessor |> internal).make
 
 
-name : (Optic pr ls a b x y -> Optic pr ls s t a b) -> String
+{-| -}
+name : (Optic pr ls a b a b -> Optic pr ls s t a b) -> String
 name accessor =
-    (Optic
-        { view = void "`view` should never be called from `name`"
-        , make = void "`make` should never be called from `name`"
-        , list = void "`list` should never be called from `name`"
-        , over = void "`over` should never be called from `name`"
-        , name = ""
-        }
-        |> accessor
-        |> internal
-    ).name
+    (id |> accessor |> internal).name
 
 
 

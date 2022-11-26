@@ -355,7 +355,7 @@ new =
 
 {-| This function gives the name of the function as a string...
 -}
-name : (Optic pr ls a b x y -> Optic pr ls s t a b) -> String
+name : (Optic pr ls a b a b -> Optic pr ls s t a b) -> String
 name =
     Base.name
 
