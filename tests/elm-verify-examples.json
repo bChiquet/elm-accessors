@@ -9,6 +9,7 @@
     "Maybe.Accessors",
     "Result.Accessors",
     "SelectList.Accessors",
+    "Tree.Accessors",
     "Tuple.Accessors"
   ]
 }

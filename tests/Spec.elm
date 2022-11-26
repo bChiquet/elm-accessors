@@ -8,46 +8,9 @@ import Lens as L
 import List.Accessors as List
 import Maybe.Accessors as Maybe
 import Test exposing (Test, describe, test)
-
-
-simpleRecord : { foo : number, bar : String, qux : Bool }
-simpleRecord =
-    { foo = 3, bar = "Yop", qux = False }
-
-
-anotherRecord : { foo : number, bar : String, qux : Bool }
-anotherRecord =
-    { foo = 5, bar = "Sup", qux = True }
-
-
-nestedRecord : { foo : { foo : number, bar : String, qux : Bool } }
-nestedRecord =
-    { foo = simpleRecord }
-
-
-recordWithList : { bar : List { foo : number, bar : String, qux : Bool } }
-recordWithList =
-    { bar = [ simpleRecord, anotherRecord ] }
-
-
-maybeRecord : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
-maybeRecord =
-    { bar = Just simpleRecord, foo = Nothing }
-
-
-dict : Dict String number
-dict =
-    Dict.fromList [ ( "foo", 7 ) ]
-
-
-recordWithDict : { bar : Dict String number }
-recordWithDict =
-    { bar = dict }
-
-
-dictWithRecord : Dict String { bar : String }
-dictWithRecord =
-    Dict.fromList [ ( "foo", { bar = "Yop" } ) ]
+import Tree exposing (Tree, tree)
+import Tree.Accessors as Tree
+import Tree.Extra.Lue as Tree exposing (leaf)
 
 
 suite : Test
@@ -252,6 +215,10 @@ suite =
                     in
                     try (L.foo << Maybe.just_ << L.bar) updatedExample
                         |> Expect.equal Nothing
+            , test "over a TreePath" <|
+                \_ ->
+                    map Tree.each String.toUpper simpleTree
+                        |> Expect.equal (Tree.map String.toUpper simpleTree)
             ]
         , describe "making accessors"
             [ let
@@ -312,3 +279,51 @@ suite =
                 ]
             ]
         ]
+
+
+simpleTree : Tree String
+simpleTree =
+    tree "root"
+        [ tree "a" [ leaf "b", leaf "c" ]
+        , tree "x" [ leaf "y", leaf "z" ]
+        ]
+
+
+simpleRecord : { foo : number, bar : String, qux : Bool }
+simpleRecord =
+    { foo = 3, bar = "Yop", qux = False }
+
+
+anotherRecord : { foo : number, bar : String, qux : Bool }
+anotherRecord =
+    { foo = 5, bar = "Sup", qux = True }
+
+
+nestedRecord : { foo : { foo : number, bar : String, qux : Bool } }
+nestedRecord =
+    { foo = simpleRecord }
+
+
+recordWithList : { bar : List { foo : number, bar : String, qux : Bool } }
+recordWithList =
+    { bar = [ simpleRecord, anotherRecord ] }
+
+
+maybeRecord : { bar : Maybe { foo : number, bar : String, qux : Bool }, foo : Maybe a }
+maybeRecord =
+    { bar = Just simpleRecord, foo = Nothing }
+
+
+dict : Dict String number
+dict =
+    Dict.fromList [ ( "foo", 7 ) ]
+
+
+recordWithDict : { bar : Dict String number }
+recordWithDict =
+    { bar = dict }
+
+
+dictWithRecord : Dict String { bar : String }
+dictWithRecord =
+    Dict.fromList [ ( "foo", { bar = "Yop" } ) ]
