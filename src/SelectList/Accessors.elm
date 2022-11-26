@@ -6,7 +6,7 @@ module SelectList.Accessors exposing (each, each_, selected)
 
 -}
 
-import Base exposing (Relation)
+import Base exposing (Optic)
 import SelectList exposing (SelectList)
 
 
@@ -22,16 +22,16 @@ import SelectList exposing (SelectList)
         { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 3 }, { bar = 4 }]
         }
 
-    get (L.foo << SL.each << L.bar) listRecord
-    --> SelectList.fromLists [1] 2 [3, 4]
+    all (L.foo << SL.each << L.bar) listRecord
+    --> [1, 2, 3, 4]
 
-    over (L.foo << SL.each << L.bar) ((+) 1) listRecord
+    map (L.foo << SL.each << L.bar) ((+) 1) listRecord
     --> { foo = SelectList.fromLists [{ bar = 2 }] { bar = 3 } [{ bar = 4 }, { bar = 5 }] }
 
 -}
-each : Relation attribute built transformed -> Relation (SelectList attribute) built (SelectList transformed)
+each : Optic pr ls a b x y -> Base.Traversal (SelectList a) (SelectList b) x y
 each =
-    Base.makeOneToN ":[_]" SelectList.map SelectList.map
+    Base.traversal ":[_]" SelectList.toList SelectList.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
@@ -46,30 +46,31 @@ each =
         { foo = SelectList.fromLists [{ bar = 1 }] { bar = 2 } [{ bar = 3 }, { bar = 4 }]
         }
 
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne : (Int, { bar : Int }) -> { bar : Int }
     multiplyIfGTOne ( idx, ({ bar } as rec) ) =
         if idx > 0 then
-            ( idx, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (idx, rec)
+            rec
 
 
-    get (L.foo << SL.each_) listRecord
-    --> SelectList.fromLists [(0, {bar = 1})] (1, {bar = 2}) [(2, {bar = 3}), (3, {bar = 4})]
+    all (L.foo << SL.each_) listRecord
+    --> [(0, {bar = 1}), (1, {bar = 2}), (2, {bar = 3}), (3, {bar = 4})]
 
-    over (L.foo << SL.each_) multiplyIfGTOne listRecord
+    map (L.foo << SL.each_) multiplyIfGTOne listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 30 }, { bar = 40 }] }
 
-    get (L.foo << SL.each_ << snd << L.bar) listRecord
-    --> SelectList.fromLists [1] 2 [3, 4]
+    all (L.foo << SL.each_ << ixd L.bar) listRecord
+    --> [1, 2, 3, 4]
 
-    over (L.foo << SL.each_ << snd << L.bar) ((+) 1) listRecord
+    map (L.foo << SL.each_ << ixd L.bar) ((+) 1) listRecord
     --> {foo = SelectList.fromLists [{bar = 2}] {bar = 3} [{bar = 4}, {bar = 5}]}
 
 -}
-each_ : Relation ( Int, attribute ) reachable built -> Relation (SelectList attribute) reachable (SelectList built)
+each_ : Optic pr ls ( Int, a ) c x y -> Base.Traversal (SelectList a) (SelectList c) x y
 each_ =
-    Base.makeOneToN "[#]"
+    Base.traversal "[#]"
+        (SelectList.toList >> List.indexedMap Tuple.pair)
         (\fn ls ->
             let
                 ( before, current, after ) =
@@ -82,19 +83,6 @@ each_ =
             SelectList.fromLists (List.indexedMap (\idx -> Tuple.pair idx >> fn) before)
                 (fn ( currentIdx, current ))
                 (List.indexedMap (\idx -> Tuple.pair (idx + (currentIdx + 1)) >> fn) after)
-        )
-        (\fn ls ->
-            let
-                ( before, current, after ) =
-                    SelectList.toTuple ls
-
-                currentIdx : Int
-                currentIdx =
-                    SelectList.index ls
-            in
-            SelectList.fromLists (List.indexedMap (\idx -> Tuple.pair idx >> fn >> Tuple.second) before)
-                (fn ( currentIdx, current ) |> Tuple.second)
-                (List.indexedMap (\idx -> Tuple.pair (idx + (currentIdx + 1)) >> fn >> Tuple.second) after)
         )
 
 
@@ -123,10 +111,10 @@ each_ =
     set (L.foo << SL.selected << L.bar) 37 listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 37 } [{ bar = 3 }, { bar = 4 }] }
 
-    over (L.foo << SL.selected << L.bar) ((*) 10) listRecord
+    map (L.foo << SL.selected << L.bar) ((*) 10) listRecord
     --> { foo = SelectList.fromLists [{ bar = 1 }] { bar = 20 } [{ bar = 3 }, { bar = 4 }] }
 
 -}
-selected : Relation attribute reachable built -> Relation (SelectList attribute) reachable built
+selected : Optic pr ls b b x y -> Base.Lens ls (SelectList b) (SelectList b) x y
 selected =
-    Base.makeOneToOne "[^]" SelectList.selected SelectList.updateSelected
+    Base.lens "[^]" SelectList.selected (\rec new -> SelectList.updateSelected (\_ -> new) rec)

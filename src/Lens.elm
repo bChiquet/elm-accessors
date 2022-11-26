@@ -1,48 +1,48 @@
 module Lens exposing (..)
 
-import Accessors exposing (Lens, makeOneToOne)
+import Base exposing (Lens, Optic, lens)
 
 
-bar : Lens { record | bar : attribute } transformed attribute built
+bar : Optic pr ls a a x y -> Lens ls { m | bar : a } { m | bar : a } x y
 bar =
-    makeOneToOne ".bar" .bar (\fn rec -> { rec | bar = fn rec.bar })
+    lens ".bar" .bar (\rec val -> { rec | bar = val })
 
 
-foo : Lens { record | foo : attribute } transformed attribute built
+foo : Optic pr ls a a x y -> Lens ls { m | foo : a } { m | foo : a } x y
 foo =
-    makeOneToOne ".foo" .foo (\fn rec -> { rec | foo = fn rec.foo })
+    lens ".foo" .foo (\rec val -> { rec | foo = val })
 
 
-qux : Lens { record | qux : attribute } transformed attribute built
+qux : Optic pr ls a a x y -> Lens ls { m | qux : a } { m | qux : a } x y
 qux =
-    makeOneToOne ".qux" .qux (\fn rec -> { rec | qux = fn rec.qux })
+    lens ".qux" .qux (\rec val -> { rec | qux = val })
 
 
-name : Lens { record | name : attribute } transformed attribute built
+name : Optic pr ls a a x y -> Lens ls { m | name : a } { m | name : a } x y
 name =
-    makeOneToOne ".name" .name (\fn rec -> { rec | name = fn rec.name })
+    lens ".name" .name (\rec val -> { rec | name = val })
 
 
-age : Lens { record | age : attribute } transformed attribute built
+age : Optic pr ls a a x y -> Lens ls { m | age : a } { m | age : a } x y
 age =
-    makeOneToOne ".age" .age (\fn rec -> { rec | age = fn rec.age })
+    lens ".age" .age (\rec val -> { rec | age = val })
 
 
-email : Lens { record | email : attribute } transformed attribute built
+email : Optic pr ls a a x y -> Lens ls { m | email : a } { m | email : a } x y
 email =
-    makeOneToOne ".email" .email (\fn rec -> { rec | email = fn rec.email })
+    lens ".email" .email (\rec val -> { rec | email = val })
 
 
-stuff : Lens { record | stuff : attribute } transformed attribute built
+stuff : Optic pr ls a a x y -> Lens ls { m | stuff : a } { m | stuff : a } x y
 stuff =
-    makeOneToOne ".stuff" .stuff (\fn rec -> { rec | stuff = fn rec.stuff })
+    lens ".stuff" .stuff (\rec val -> { rec | stuff = val })
 
 
-things : Lens { record | things : attribute } transformed attribute built
+things : Optic pr ls a a x y -> Lens ls { m | things : a } { m | things : a } x y
 things =
-    makeOneToOne ".things" .things (\fn rec -> { rec | things = fn rec.things })
+    lens ".things" .things (\rec val -> { rec | things = val })
 
 
-info : Lens { record | info : attribute } transformed attribute built
+info : Optic pr ls a a x y -> Lens ls { m | info : a } { m | info : a } x y
 info =
-    makeOneToOne ".info" .info (\fn rec -> { rec | info = fn rec.info })
+    lens ".info" .info (\rec val -> { rec | info = val })

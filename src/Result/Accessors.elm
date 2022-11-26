@@ -1,11 +1,13 @@
-module Result.Accessors exposing (onErr, onOk)
+module Result.Accessors exposing (err_, ok_)
 
-import Base exposing (Relation)
+import Base exposing (Optic, Prism)
+import Result exposing (Result(..))
 
 
 {-| This accessor lets you access values inside the Ok variant of a Result.
 
     import Accessors exposing (..)
+    import Result.Accessors as Result
     import Lens as L
 
     maybeRecord : { foo : Result String { bar : Int }, qux : Result String { bar : Int } }
@@ -13,27 +15,28 @@ import Base exposing (Relation)
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << ok << L.bar) maybeRecord
+    try (L.foo << Result.ok_ << L.bar) maybeRecord
     --> Just 2
 
-    get (L.qux << ok << L.bar) maybeRecord
+    try (L.qux << Result.ok_ << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    map (L.foo << Result.ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
 
-    over (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    map (L.qux << Result.ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
-onOk : Relation attribute built transformed -> Relation (Result x attribute) built (Maybe transformed)
-onOk =
-    Base.makeOneToN "?" (\fn -> Result.map fn >> Result.toMaybe) Result.map
+ok_ : Optic pr ls a b x y -> Prism pr (Result ignored a) (Result ignored b) x y
+ok_ =
+    Base.prism ".?[Ok]" Ok (unwrap (Err >> Err) Ok)
 
 
 {-| This accessor lets you access values inside the Err variant of a Result.
 
     import Accessors exposing (..)
+    import Result.Accessors as Result
     import Lens as L
 
     maybeRecord : { foo : Result String { bar : Int }, qux : Result String { bar : Int } }
@@ -41,28 +44,29 @@ onOk =
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << err) maybeRecord
+    try (L.foo << Result.err_) maybeRecord
     --> Nothing
 
-    get (L.qux << err) maybeRecord
+    try (L.qux << Result.err_) maybeRecord
     --> Just "Not an Int"
 
-    over (L.foo << err) String.toUpper maybeRecord
+    map (L.foo << Result.err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
-    over (L.qux << err) String.toUpper maybeRecord
+    map (L.qux << Result.err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
-onErr : Relation attribute built transformed -> Relation (Result attribute x) built (Maybe transformed)
-onErr =
-    let
-        getter fn res =
-            case res of
-                Err e ->
-                    Just (fn e)
+err_ : Optic pr ls a b x y -> Prism pr (Result a ignored) (Result b ignored) x y
+err_ =
+    Base.prism ".?[Err]" Err (unwrap Ok (Ok >> Err))
 
-                _ ->
-                    Nothing
-    in
-    Base.makeOneToN "!" getter Result.mapError
+
+unwrap : (e -> x) -> (a -> x) -> Result e a -> x
+unwrap onE onA r =
+    case r of
+        Ok a ->
+            onA a
+
+        Err e ->
+            onE e

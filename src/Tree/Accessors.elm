@@ -1,36 +1,40 @@
 module Tree.Accessors exposing (each, labelAt, onLabel, onPath)
 
-import Base exposing (Lens, Relation)
+import Base exposing (Optic)
 import Tree exposing (Tree)
 import Tree.Extra.Lue as Tree
 import TreePath exposing (TreePath)
 
 
-onLabel : Lens (Tree label) transformed label wrap
+labelAt :
+    TreePath
+    -> Optic attr (Tree attr) attr
+    -> Optic (Tree attr) (Tree attr) (Tree attr)
+labelAt path =
+    onPath path << onLabel
+
+
+onLabel : Optic attr view attr -> Optic (Tree attr) view (Tree attr)
 onLabel =
-    Base.makeOneToOne "-label"
+    Base.lens "-label"
         Tree.label
         Tree.mapLabel
 
 
-each :
-    Relation label reachable wrap
-    -> Relation (Tree label) reachable (Tree wrap)
+each : Optic attr view over -> Optic (Tree attr) (Tree view) (Tree over)
 each =
-    Base.makeOneToN
+    Base.traversal
         "<>"
         Tree.map
         Tree.map
 
 
-onPath : TreePath -> Lens (Tree a) (Tree a) (Tree a) reachable
+onPath :
+    TreePath
+    -> Optic (Tree attr) (Tree attr) (Tree attr)
+    -> Optic (Tree attr) (Tree attr) (Tree attr)
 onPath path =
-    Base.makeOneToN
+    Base.traversal
         ("<" ++ String.join ", " (List.map String.fromInt path) ++ ">")
         (Tree.updateAt path)
         (Tree.updateAt path)
-
-
-labelAt : TreePath -> Lens (Tree label) (Tree label) label reachable
-labelAt path =
-    onPath path << onLabel

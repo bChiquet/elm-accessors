@@ -6,37 +6,43 @@ module List.Accessors exposing (each, each_, at, id)
 
 -}
 
-import Base exposing (Relation)
-import Maybe.Accessors as Maybe
+import Base exposing (Optic(..), Traversal)
+import Tuple.Accessors as Tuple
+
+
+
+-- import Maybe.Accessors as Maybe
 
 
 {-| This accessor combinator lets you access values inside List.
 
     import Accessors exposing (..)
+    import List.Accessors as List
     import Lens as L
 
-    listRecord : {foo : List {bar : Int}}
+    listRecord : { foo : List { bar : Int } }
     listRecord = { foo = [ {bar = 2}
                          , {bar = 3}
                          , {bar = 4}
                          ]
                  }
 
-    get (L.foo << each << L.bar) listRecord
+    all (L.foo << List.each << L.bar) listRecord
     --> [2, 3, 4]
 
-    over (L.foo << each << L.bar) ((+) 1) listRecord
+    map (L.foo << List.each << L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
+each : Optic pr ls a b x y -> Traversal (List a) (List b) x y
 each =
-    Base.makeOneToN ":[]" List.map List.map
+    Base.traversal ":[]" identity List.map
 
 
 {-| This accessor lets you traverse a list including the index of each element
 
     import Accessors exposing (..)
+    import List.Accessors as List
     import Lens as L
 
     listRecord : {foo : List {bar : Int}}
@@ -46,137 +52,157 @@ each =
                          ]
                  }
 
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne : (Int, { bar : Int }) -> { bar : Int }
     multiplyIfGTOne ( idx, ({ bar } as rec) ) =
         if idx > 0 then
-            ( idx, { bar = bar * 10 } )
+             { bar = bar * 10 }
         else
-            (idx, rec)
+            rec
 
-
-    get (L.foo << eachIdx) listRecord
+    all (L.foo << List.each_) listRecord
     --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
 
-    over (L.foo << eachIdx) multiplyIfGTOne listRecord
+    map (L.foo << List.each_) multiplyIfGTOne listRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
 
-    get (L.foo << eachIdx << snd << L.bar) listRecord
+    all (L.foo << List.each_ << ixd L.bar) listRecord
     --> [2, 3, 4]
 
-    over (L.foo << eachIdx << snd << L.bar) ((+) 1) listRecord
+    map (L.foo << List.each_ << ixd L.bar) ((+) 1) listRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-each_ : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
+each_ : Optic pr ls ( Int, b ) c x y -> Traversal (List b) (List c) x y
 each_ =
-    Base.makeOneToN "#[]"
-        (\fn ->
-            List.indexedMap
-                (\idx -> Tuple.pair idx >> fn)
-        )
-        (\fn ->
-            List.indexedMap
-                (\idx -> Tuple.pair idx >> fn >> Tuple.second)
-        )
+    Base.traversal "#[]"
+        (List.indexedMap Tuple.pair)
+        (\fn -> List.indexedMap (\idx -> Tuple.pair idx >> fn))
 
 
 {-| at: Structure Preserving accessor over List members.
 
     import Accessors exposing (..)
+    import List.Accessors as List
     import Lens as L
 
     list : List { bar : String }
     list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
 
-    get (at 1) list
+    try (List.at 1) list
     --> Just { bar = "Things" }
 
-    get (at 9000) list
+    try (List.at 9000) list
     --> Nothing
 
-    get (at 0 << L.bar) list
+    try (List.at 0 << L.bar) list
     --> Just "Stuff"
 
-    set (at 0 << L.bar) "Whatever" list
+    set (List.at 0 << L.bar) "Whatever" list
     --> [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
 
-    set (at 9000 << L.bar) "Whatever" list
+    set (List.at 9000 << L.bar) "Whatever" list
     --> list
 
 -}
-at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
-at idx =
-    Base.makeOneToOne ("(" ++ String.fromInt idx ++ ")")
-        (if idx < 0 then
-            always Nothing
+at : Int -> Optic pr ls a a x y -> Traversal (List a) (List a) x y
+at key =
+    Base.traversal ("[" ++ String.fromInt key ++ "]?")
+        (List.foldl
+            (\v ( idx, acc ) ->
+                ( idx + 1
+                , if idx == key then
+                    v :: acc
 
-         else
-            List.head << List.drop idx
+                  else
+                    acc
+                )
+            )
+            ( 0, [] )
+            >> Tuple.second
         )
         (\fn ->
-            -- NOTE: `<< try` at the end ensures we can't delete any existing keys
-            -- so `List.filterMap identity` should be safe
-            -- TODO: write this in terms of `foldr` to avoid double iteration.
             List.indexedMap
-                (\idx_ v ->
-                    if idx == idx_ then
-                        fn (Just v)
+                (\idx v ->
+                    if idx == key then
+                        fn v
 
                     else
-                        Just v
+                        v
                 )
-                >> List.filterMap identity
         )
-        << Maybe.try
+
+
+
+-- TODO: Add these back in the future maybe?
+-- {-| Everything except first n elements of the list.
+-- -}
+-- drop : Int -> Optic pr ls (List a) (List a) x y -> Traversal (List a) (List a) x y
+-- drop i =
+--     Base.traversal "drop" (List.drop i >> (\x -> [ x ])) <|
+--         \f lst ->
+--             List.take i lst ++ f (List.drop i lst)
+-- {-| List head.
+-- -}
+-- head : Optic pr ls a a x y -> Traversal (List a) (List a) x y
+-- head =
+--     cons << Tuple.fst
+-- {-| Match head/tail of a non-empty list.
+-- -}
+-- cons : Optic pr ls ( a, List a ) ( b, List b ) x y -> Prism pr (List a) (List b) x y
+-- cons =
+--     Base.prism ":" (uncurry (::)) <|
+--         \lst ->
+--             case lst of
+--                 x :: xs ->
+--                     Ok ( x, xs )
+--                 [] ->
+--                     Err []
 
 
 {-| id: Structure Preserving accessor over List members.
 
-    import Accessors exposing (get, set)
-    import List.Accessors exposing (id)
+    import Accessors exposing (..)
+    import List.Accessors as List
     import Lens as L
 
     list : List { id : Int, bar : String }
     list = [{ id = 7, bar = "Stuff" }, { id = 1, bar =  "Things" }, { id = 5, bar = "Woot" }]
 
-    get (id 1) list
-    --> Just { bar = "Things" }
+    try (List.id 1) list
+    --> Just { id = 1, bar = "Things" }
 
-    get (id 0) list
+    try (List.id 0) list
     --> Nothing
 
-    get (id 7 << L.bar) list
+    try (List.id 7 << L.bar) list
     --> Just "Stuff"
 
-    set (id 7 << L.bar) "Whatever" list
+    set (List.id 7 << L.bar) "Whatever" list
     --> [{ id = 7, bar = "Whatever" }, { id = 1, bar =  "Things" }, { id = 5, bar = "Woot" }]
 
-    set (id 9000 << L.bar) "Whatever" list
+    set (List.id 9000 << L.bar) "Whatever" list
     --> list
 
 -}
-id : Int -> Relation { m | id : Int } reachable wrap -> Relation (List { m | id : Int }) reachable (Maybe wrap)
+id : Int -> Optic pr ls { a | id : Int } { a | id : Int } x y -> Traversal (List { a | id : Int }) (List { a | id : Int }) x y
 id key =
-    Base.makeOneToOne ("(" ++ String.fromInt key ++ ")")
-        (if key < 0 then
-            always Nothing
+    Base.traversal ("(" ++ String.fromInt key ++ ")?")
+        (List.filterMap
+            (\v ->
+                if v.id == key then
+                    Just v
 
-         else
-            List.filter (\v -> v.id == key)
-                >> List.head
+                else
+                    Nothing
+            )
         )
         (\fn ->
-            -- NOTE: `<< try` at the end ensures we can't delete any existing keys
-            -- so `List.filterMap identity` should be safe
-            -- TODO: write this in terms of `foldr` to avoid double iteration.
             List.map
                 (\v ->
-                    if key == v.id then
-                        fn (Just v)
+                    if v.id == key then
+                        fn v
 
                     else
-                        Just v
+                        v
                 )
-                >> List.filterMap identity
         )
-        << Maybe.try

@@ -13,19 +13,23 @@
     "url": "https://github.com/erlandsona/elm-accessors/issues"
   },
   "scripts": {
-    "test": "run-p elm:test elm:doctest",
+    "test": "run-s elm:doctest elm:test",
     "test:watch": "npm-watch test",
     "elm:test": "elm-test",
     "elm:doctest": "elm-verify-examples -r"
   },
   "watch": {
     "test": {
-      "patterns": [ "src", "tests" ],
+      "patterns": [
+        "src",
+        "tests"
+      ],
       "extensions": "elm",
       "ignore": "tests/VerifyExamples"
     }
   },
   "devDependencies": {
+    "elm": "^0.19.1-5",
     "elm-review": "^2.7.6",
     "elm-test": "^0.19.1-revision10",
     "elm-verify-examples": "^5.2.0",

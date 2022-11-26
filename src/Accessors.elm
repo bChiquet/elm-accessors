@@ -1,48 +1,56 @@
 module Accessors exposing
-    ( Relation, Accessor, Lens, Lens_, Setable
-    , makeOneToOne, makeOneToN
-    , get, set, over, name, is
-    , try, def, or, ok, err
+    ( Optic, SimpleOptic
+    , Traversal, Lens, Prism, Iso
+    , SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
+    , traversal, lens, prism, iso
+    , ixd, from
+    , get, all, try, has, map, set, new, name
+    , just_, ok_, err_
     , values, keyed, key, keyI, key_
     , each, eachIdx, at
     , every, everyIdx, ix
     , fst, snd
     )
 
-{-| Relations are interfaces to document the relation between two data
-structures. For convenience, we'll call the containing structure `super`, and
-the contained structure `sub`. What a `Relation` claims is that a `super` is
-referencing a `sub` in some way.
-
-Relations are the building blocks of accessors. An accessor is a function that
-expects a `Relation` and builds a new relation with it. Accessors are
-composable, which means you can build a chain of relations to manipulate nested
-structures without handling the packing and the unpacking.
+{-| Accessors are a way of operating on nested data in Elm that doesn't require gobs of boilerplate.
 
 
-# Relation
+## Optic: is the opaque underlying interface that enables the rest of the library to work.
 
-@docs Relation, Accessor, Lens, Lens_, Setable
+@docs Optic, SimpleOptic
 
 
-# Constructors
+## Type Aliases: are shorthands from the Optics nomenclature that make writing your
+
+own accessors more convenient and hopefully easier to understand.
+
+@docs Traversal, Lens, Prism, Iso
+@docs SimpleTraversal, SimpleLens, SimplePrism, SimpleIso
+
+
+## Constructors
 
 Accessors are built using these functions:
 
-@docs makeOneToOne, makeOneToN
+@docs traversal, lens, prism, iso
 
 
-# Action functions
+## Lifters for composing w/ indexed optics
+
+@docs ixd, from
+
+
+## Action functions
 
 Action functions are functions that take an accessor and let you perform a
 specific action on data using that accessor.
 
-@docs get, set, over, name, is
+@docs get, all, try, has, map, set, new, name
 
 
-# Common accessors
+## Common Optics to mitigate `import` noise. Not everything is re-exported.
 
-@docs try, def, or, ok, err
+@docs just_, ok_, err_
 @docs values, keyed, key, keyI, keyF, key_
 @docs each, eachIdx, at
 @docs every, everyIdx, ix
@@ -62,84 +70,91 @@ import Tuple.Accessors as Tuple
 
 
 
--- Relation
+-- Optic
 
 
-{-| The most general version of this type that everything else specializes
+type alias Optic pr ls s t a b =
+    Base.Optic pr ls s t a b
+
+
+
+-- Type Aliases
+
+
+{-| The lens is "not a prism".
 -}
-type alias Accessor dataBefore dataAfter attrBefore attrAfter reachable =
-    Base.Accessor dataBefore dataAfter attrBefore attrAfter reachable
+type alias Lens ls s t a b =
+    Base.Lens ls s t a b
 
 
-{-| This is an approximation of Van Laarhoven encoded Lenses which enable the
-the callers to use regular function composition to build more complex nested
-updates of more complicated types.
-
-But the original "Lens" type looked more like:
-
-    type alias Lens structure attribute =
-        { get : structure -> attribute
-        , set : structure -> attribute -> structure
-        }
-
-unfortunately these can't be composed without
-defining custom `composeLens`, `composeIso`, `composePrism`, style functions.
-
-whereas with this approach we're able to make use of Elm's built in `<<` operator
-to get/set/over deeply nested data.
-
+{-| The prism is "not a lens".
 -}
-type alias
-    Lens
-        -- Structure Before Action
-        structure
-        -- Structure After Action
-        transformed
-        -- Focus Before action
-        attribute
-        -- Focus After action
-        built
-    =
-    Base.Lens structure transformed attribute built
+type alias Prism pr s t a b =
+    Base.Prism pr s t a b
 
 
-{-| Simplified version of Lens but seems to break type inference for more complicated compositions.
+{-| The traversal is neither "lens" or "prism".
 -}
-type alias Lens_ structure attribute =
-    Lens structure attribute attribute attribute
+type alias Traversal s t a b =
+    Base.Traversal s t a b
 
 
-
--- type alias Getable structure transformed attribute built reachable =
---     Relation attribute built attribute
---     -> Relation structure reachable transformed
-
-
-{-| Type of a composition of accessors that `set` can be called with.
+{-| The isomorphism is both "lens" and "prism".
 -}
-type alias Setable structure transformed attribute built =
-    Relation attribute attribute built -> Relation structure attribute transformed
+type alias Iso pr ls s t a b =
+    Base.Iso pr ls s t a b
 
 
+{-| `Optic` that cannot change type of the object.
+-}
+type alias SimpleOptic pr ls s a =
+    Optic pr ls s s a a
 
--- type alias Watami structure transformed attribute built =
---     Relation attribute (Maybe built) transformed
---     -> Relation structure (Maybe built) (Maybe transformed)
+
+{-| `Lens` that cannot change type of the object.
+-}
+type alias SimpleLens ls s a =
+    Lens ls s s a a
 
 
-type alias Relation structure attribute wrap =
-    Base.Relation structure attribute wrap
+{-| `Prism` that cannot change type of the object.
+-}
+type alias SimplePrism pr s a =
+    Prism pr s s a a
+
+
+{-| `Traversal` that cannot change type of the object.
+-}
+type alias SimpleTraversal s a =
+    Traversal s s a a
+
+
+{-| `Iso` that cannot change type of the object.
+-}
+type alias SimpleIso pr ls s a =
+    Iso pr ls s s a a
 
 
 
 -- Constructors
 
 
+{-| An isomorphism constructor.
+-}
+iso :
+    String
+    -> (s -> a)
+    -> (b -> t)
+    -> (Optic pr ls a b x y -> Iso pr ls s t x y)
+iso =
+    Base.iso
+
+
 {-| This exposes a description field that's necessary for use with the name function
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    foo : Relation field sub wrap -> Relation { rec | foo : field } sub wrap
+    foo : Optic attr view over -> Optic { rec | foo : attr } view over
     foo =
         makeOneToOne
             ".foo"
@@ -147,35 +162,70 @@ want type safe keys for a Dictionary but you still want to use elm/core implemen
             (\change rec -> { rec | foo = change rec.foo })
 
 -}
-makeOneToOne :
+lens :
     String
-    -> (structure -> attribute)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -> (Relation attribute reachable wrap -> Relation structure reachable wrap)
-makeOneToOne =
-    Base.makeOneToOne
+    -> (s -> a)
+    -> (s -> b -> t)
+    -> (Optic pr ls a b x y -> Lens ls s t x y)
+lens =
+    Base.lens
+
+
+{-| A prism constructor.
+
+Parameters are: reconstructor and a splitter.
+
+Reconstructor takes a final value and constructs a final object.
+
+The splitter turns initial object either to final object directly (if initial object is of wrong variant),
+or spits out `a`.
+
+-}
+prism :
+    String
+    -> (b -> t)
+    -> (s -> Result t a)
+    -> (Optic pr ls a b x y -> Prism pr s t x y)
+prism =
+    Base.prism
 
 
 {-| This exposes a description field that's necessary for use with the name function
 for getting unique names out of compositions of accessors. This is useful when you
 want type safe keys for a Dictionary but you still want to use elm/core implementation.
 
-    each : Relation elem sub wrap -> Relation (List elem) sub (List wrap)
+    each : Optic pr ls a b x y -> Traversal (List a) (List b) x y
     each =
-        makeOneToN "[]"
-            List.map
+        Base.traversal "[]"
+            identity
             List.map
 
 -}
-makeOneToN :
+traversal :
     String
-    -> ((attribute -> built) -> structure -> transformed)
-    -> ((attribute -> attribute) -> structure -> structure)
-    -- What is reachable here?
-    -> Relation attribute reachable built
-    -> Relation structure reachable transformed
-makeOneToN =
-    Base.makeOneToN
+    -> (s -> List a)
+    -> ((a -> b) -> s -> t)
+    -> (Optic pr ls a b x y -> Traversal s t x y)
+traversal =
+    Base.traversal
+
+
+
+-- Lifters for composing w/ indexed optics
+
+
+ixd :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> (Optic pr ls a b x y -> Traversal ( ix, s ) t x y)
+ixd =
+    Base.ixd
+
+
+from :
+    (Optic pr ls a b a b -> Iso pr ls s t a b)
+    -> (Optic pr ls t s t s -> Iso pr ls b a t s)
+from =
+    Base.from
 
 
 
@@ -193,19 +243,89 @@ get (foo << bar) myRecord
 ```
 
 -}
-get :
-    (Relation attribute built attribute -> Relation structure reachable transformed)
-    -> structure
-    -> transformed
+get : (Optic pr ls a b a b -> Optic pr () s t a b) -> s -> a
 get =
     Base.get
 
 
-{-| This function gives the name of the function as a string...
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    Just "Stuff"
+        |> all just_
+    --> ["Stuff"]
+
+    Nothing
+        |> all just_
+    --> []
+
 -}
-name : Accessor a b c d e -> String
-name =
-    Base.name
+all :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> s
+    -> List a
+all =
+    Base.all
+
+
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    ["Stuff", "things"]
+        |> try (at 2)
+    --> Nothing
+
+    ["Stuff", "things"]
+        |> try (at 0)
+    --> Just "Stuff"
+
+-}
+try :
+    (Optic pr ls a b a b -> Optic pr ls s t a b)
+    -> s
+    -> Maybe a
+try =
+    Base.try
+
+
+{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
+
+    Just 1234
+        |> has just_
+    --> True
+
+    Nothing
+        |> has just_
+    --> False
+
+    [ "Wooo", "Things" ]
+        |> has (at 7)
+    --> False
+
+    [ "Wooo", "Things" ]
+        |> has (at 0)
+    --> True
+
+-}
+has : (Optic pr ls a b a b -> Optic pr ls s t a b) -> s -> Bool
+has =
+    Base.has
+
+
+{-| The over function takes:
+
+  - An accessor,
+  - A function `(sub -> sub)`,
+  - A datastructure with type `super`
+    and it returns the data structure, with the accessible field changed by applying
+    the function to the existing value.
+
+```
+map (foo << qux) ((+) 1) myRecord
+```
+
+-}
+map : (Optic pr ls a b a b -> Optic pr ls s t a b) -> (a -> b) -> s -> t
+map =
+    Base.map
 
 
 {-| The set function takes:
@@ -221,40 +341,23 @@ set (foo << bar) "Hi!" myRecord
 ```
 
 -}
-set :
-    Setable structure transformed attribute built
-    -> attribute
-    -> structure
-    -> structure
+set : (Optic pr ls a b a b -> Optic pr ls s t a b) -> b -> s -> t
 set =
     Base.set
 
 
-
--- type alias Modifiable =
---    Relation attribute x y -> Relation structure a transformed
-
-
-{-| The over function takes:
-
-  - An accessor,
-  - A function `(sub -> sub)`,
-  - A datastructure with type `super`
-    and it returns the data structure, with the accessible field changed by applying
-    the function to the existing value.
-
-```
-over (foo << qux) ((+) 1) myRecord
-```
-
+{-| Use prism to reconstruct.
 -}
-over :
-    (Relation attribute attribute built -> Relation structure attribute transformed)
-    -> (attribute -> attribute)
-    -> structure
-    -> structure
-over =
-    Base.over
+new : (Optic pr ls a b a b -> Optic () ls s t a b) -> b -> t
+new =
+    Base.new
+
+
+{-| This function gives the name of the function as a string...
+-}
+name : (Optic pr ls a b a b -> Optic pr ls s t a b) -> String
+name =
+    Base.name
 
 
 
@@ -266,183 +369,119 @@ over =
     import Accessors exposing (..)
     import Lens as L
 
-    maybeRecord : { foo : Maybe { bar : Int }, qux : Maybe { bar : Int } }
-    maybeRecord = { foo = Just { bar = 2 }
+    maybeRecord : { foo : Maybe { bar : Maybe {stuff : Maybe Int} }, qux : Maybe { bar : Maybe Int } }
+    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
                   , qux = Nothing
                   }
 
-    get (L.foo << try << L.bar) maybeRecord
-    --> Just 2
+    try (L.foo << just_ << L.bar << just_ << L.stuff) maybeRecord
+    --> Just (Just 2 )
 
-    get (L.qux << try << L.bar) maybeRecord
+    try (L.qux << just_ << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << try << L.bar) ((+) 1) maybeRecord
-    --> {foo = Just {bar = 3}, qux = Nothing}
+    map (L.foo << just_ << L.bar << just_ << L.stuff << just_) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
 
-    over (L.qux << try << L.bar) ((+) 1) maybeRecord
-    --> {foo = Just {bar = 2}, qux = Nothing}
-
--}
-try : Relation attribute built transformed -> Relation (Maybe attribute) built (Maybe transformed)
-try =
-    Maybe.try
-
-
-{-| This accessor combinator lets you provide a default value for otherwise failable compositions
-
-    import Dict exposing (Dict)
-    import Lens as L
-
-    dict : Dict String {bar : Int}
-    dict =
-        Dict.fromList [("foo", {bar = 2})]
-
-    get (key "foo" << def {bar = 0}) dict
-    --> {bar = 2}
-
-    get (key "baz" << def {bar = 0}) dict
-    --> {bar = 0}
-
-    -- NOTE: The following do not compile :thinking:
-    --get (key "foo" << try << L.bar << def 0) dict
-    ----> 2
-
-    --get (key "baz" << try << L.bar << def 0) dict
-    ----> 0
+    map (L.qux << just_ << L.bar << just_) ((+) 1) maybeRecord
+    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
 
 -}
-def : attribute -> Relation attribute reachable wrap -> Relation (Maybe attribute) reachable wrap
-def =
-    Maybe.def
+just_ : Optic pr ls a b x y -> Prism pr (Maybe a) (Maybe b) x y
+just_ =
+    Maybe.just_
 
 
-{-| This accessor combinator lets you provide a default value for otherwise failable compositions
 
-    import Dict exposing (Dict)
-    import Lens as L
-
-    dict : Dict String {bar : Int}
-    dict =
-        Dict.fromList [("foo", {bar = 2})]
-
-    -- NOTE: Use `def` for this.
-    --get (key "foo" << or {bar = 0}) dict
-    ----> {bar = 2}
-
-    --get (key "baz" << or {bar = 0}) dict
-    ----> {bar = 0}
-
-    get ((key "foo" << try << L.bar) |> or 0) dict
-    --> 2
-
-    get ((key "baz" << try << L.bar) |> or 0) dict
-    --> 0
-
--}
-or :
-    attribute
-    -> (Relation attribute attribute attribute -> Relation structure attribute (Maybe attribute))
-    -> (Relation attribute other attribute -> Relation structure other attribute)
-or =
-    Maybe.or
+--{-| This accessor combinator lets you access values inside Maybe.
+--see [`try`](Maybe-Accessors#try) for a NON-flattening lens.
+--    import Accessors exposing (..)
+--    import Lens as L
+--    maybeRecord : { foo : Maybe { bar : Maybe {stuff : Maybe Int} }, qux : Maybe { bar : Maybe Int } }
+--    maybeRecord = { foo = Just { bar = Just { stuff = Just 2 } }
+--                  , qux = Nothing
+--                  }
+--    try (L.foo << just__ << L.bar << just__ << L.stuff) maybeRecord
+--    --> Just 2
+--    try (L.qux << just__ << L.bar) maybeRecord
+--    --> Nothing
+--    map (L.foo << just__ << L.bar << just__ << L.stuff << just__) ((+) 1) maybeRecord
+--    --> {foo = Just {bar = Just { stuff = Just 3 }}, qux = Nothing}
+--    map (L.qux << just__ << L.bar << just__) ((+) 1) maybeRecord
+--    --> {foo = Just {bar = Just {stuff = Just 2}}, qux = Nothing}
+---}
+--try_ : Optic attr (Maybe view) over -> Optic (Maybe attr) (Maybe view) (Maybe over)
+--try_ =
+--    Maybe.try_
+--{-| This accessor combinator lets you provide a default value for otherwise failable compositions
+--    import Dict exposing (Dict)
+--    import Lens as L
+--    dict : Dict String {bar : Int}
+--    dict =
+--        Dict.fromList [("foo", {bar = 2})]
+--    get (key "foo" << def {bar = 0}) dict
+--    --> {bar = 2}
+--    get (key "baz" << def {bar = 0}) dict
+--    --> {bar = 0}
+--    -- NOTE: The following do not compile :thinking:
+--    --get (key "foo" << just_ << L.bar << def 0) dict
+--    ----> 2
+--    --get (key "baz" << just_ << L.bar << def 0) dict
+--    ----> 0
+---}
+--def : attr -> Optic attr view over -> Optic (Maybe attr) view (Maybe over)
+--def =
+--    Maybe.def
+--{-| This accessor combinator lets you provide a default value for otherwise failable compositions
+--    import Dict exposing (Dict)
+--    import Lens as L
+--    dict : Dict String {bar : Int}
+--    dict =
+--        Dict.fromList [("foo", {bar = 2})]
+--    -- NOTE: Use `def` for this.
+--    --get (key "foo" << or {bar = 0}) dict
+--    ----> {bar = 2}
+--    --get (key "baz" << or {bar = 0}) dict
+--    ----> {bar = 0}
+--    get ((key "foo" << just_ << L.bar) |> or 0) dict
+--    --> 2
+--    get ((key "baz" << just_ << L.bar) |> or 0) dict
+--    --> 0
+---}
+--or : attr -> (Optic attr attr attrOver -> Optic value (Maybe attr) over) -> Optic attr attrView attrOver -> Optic value attrView over
+--or =
+--    Maybe.or
 
 
 {-| This accessor combinator lets you access values inside List.
-
-    import Accessors exposing (..)
-    import Lens as L
-
-    listRecord : {foo : List {bar : Int}}
-    listRecord = { foo = [ {bar = 2}
-                         , {bar = 3}
-                         , {bar = 4}
-                         ]
-                 }
-
-    get (L.foo << each << L.bar) listRecord
-    --> [2, 3, 4]
-
-    over (L.foo << each << L.bar) ((+) 1) listRecord
-    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
-
+alias for [`List.Accessors.each`](List-Accessors#each)
 -}
-each : Relation attribute built transformed -> Relation (List attribute) built (List transformed)
+each : Optic pr ls a b x y -> Traversal (List a) (List b) x y
 each =
     List.each
 
 
 {-| This accessor lets you traverse a list including the index of each element
-
-    import Accessors exposing (..)
-    import Lens as L
-
-    listRecord : {foo : List {bar : Int}}
-    listRecord = { foo = [ {bar = 2}
-                         , {bar = 3}
-                         , {bar = 4}
-                         ]
-                 }
-
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
-    multiplyIfGTOne ( idx, ({ bar } as rec) ) =
-        if idx > 0 then
-            ( idx, { bar = bar * 10 } )
-        else
-            (idx, rec)
-
-
-    get (L.foo << eachIdx) listRecord
-    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
-
-    over (L.foo << eachIdx) multiplyIfGTOne listRecord
-    --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}]}
-
-    get (L.foo << eachIdx << snd << L.bar) listRecord
-    --> [2, 3, 4]
-
-    over (L.foo << eachIdx << snd << L.bar) ((+) 1) listRecord
-    --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}]}
-
+alias for [`List.Accessors.each_`](List-Accessors#each_)
 -}
-eachIdx : Relation ( Int, attribute ) reachable built -> Relation (List attribute) reachable (List built)
+eachIdx : Optic pr ls ( Int, b ) c x y -> Traversal (List b) (List c) x y
 eachIdx =
     List.each_
 
 
 {-| at: Structure Preserving accessor over List members.
-
-    import Accessors exposing (..)
-    import Lens as L
-
-    list : List { bar : String }
-    list = [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    get (at 1) list
-    --> Just { bar = "Things" }
-
-    get (at 9000) list
-    --> Nothing
-
-    get (at 0 << L.bar) list
-    --> Just "Stuff"
-
-    set (at 0 << L.bar) "Whatever" list
-    --> [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    set (at 9000 << L.bar) "Whatever" list
-    --> list
-
+alias for [`List.Accessors.at`](List-Accessors#at)
 -}
-at : Int -> Relation v reachable wrap -> Relation (List v) reachable (Maybe wrap)
+at : Int -> Optic pr ls a a x y -> Traversal (List a) (List a) x y
 at =
     List.at
 
 
 {-| This accessor combinator lets you access values inside Array.
+alias for [`Array.Accessors.each`](Array-Accessors#each)
 
-    import Array exposing (Array)
     import Accessors exposing (..)
+    import Array exposing (Array)
     import Lens as L
 
     arrayRecord : {foo : Array {bar : Int}}
@@ -451,19 +490,20 @@ at =
             Array.fromList [{ bar = 2 }, { bar = 3 }, {bar = 4}]
         }
 
-    get (L.foo << every << L.bar) arrayRecord
-    --> Array.fromList [2, 3, 4]
+    all (L.foo << every << L.bar) arrayRecord
+    --> [2, 3, 4]
 
-    over (L.foo << every << L.bar) ((+) 1) arrayRecord
+    map (L.foo << every << L.bar) ((+) 1) arrayRecord
     --> {foo = Array.fromList [{bar = 3}, {bar = 4}, {bar = 5}]}
 
 -}
-every : Relation attribute built transformed -> Relation (Array attribute) built (Array transformed)
+every : Optic pr ls a b x y -> Traversal (Array a) (Array b) x y
 every =
     Array.each
 
 
-{-| This accessor lets you traverse a list including the index of each element
+{-| This accessor lets you traverse an Array including the index of each element
+alias for [`Array.Accessors.each_`](Array-Accessors#each_)
 
     import Accessors exposing (..)
     import Lens as L
@@ -476,33 +516,64 @@ every =
                           ] |> Array.fromList
                   }
 
-    multiplyIfGTOne : (Int, { bar : Int }) -> (Int, { bar : Int })
+    multiplyIfGTOne : (Int, { bar : Int }) -> { bar : Int }
     multiplyIfGTOne ( idx, ({ bar } as rec) ) =
         if idx > 0 then
-            ( idx, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (idx, rec)
+            rec
 
 
-    get (L.foo << everyIdx) arrayRecord
-    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})] |> Array.fromList
+    all (L.foo << everyIdx) arrayRecord
+    --> [(0, {bar = 2}), (1, {bar = 3}), (2, {bar = 4})]
 
-    over (L.foo << everyIdx) multiplyIfGTOne arrayRecord
+    map (L.foo << everyIdx) multiplyIfGTOne arrayRecord
     --> {foo = [{bar = 2}, {bar = 30}, {bar = 40}] |> Array.fromList}
 
-    get (L.foo << everyIdx << snd << L.bar) arrayRecord
-    --> [2, 3, 4] |> Array.fromList
+    all (L.foo << everyIdx << ixd L.bar) arrayRecord
+    --> [2, 3, 4]
 
-    over (L.foo << everyIdx << snd << L.bar) ((+) 1) arrayRecord
+    map (L.foo << everyIdx << ixd L.bar) ((+) 1) arrayRecord
     --> {foo = [{bar = 3}, {bar = 4}, {bar = 5}] |> Array.fromList}
 
 -}
-everyIdx : Relation ( Int, attribute ) reachable built -> Relation (Array attribute) reachable (Array built)
+everyIdx : Optic pr ls ( Int, b ) c x y -> Traversal (Array b) (Array c) x y
 everyIdx =
     Array.each_
 
 
+{-| alias for [`Array.Accessors.at`](Array-Accessors#at)
+
+    import Accessors exposing (..)
+    import Array exposing (Array)
+    import Lens as L
+
+    arr : Array { bar : String }
+    arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    try (ix 1) arr
+    --> Just { bar = "Things" }
+
+    try (ix 9000) arr
+    --> Nothing
+
+    try (ix 0 << L.bar) arr
+    --> Just "Stuff"
+
+    set (ix 0 << L.bar) "Whatever" arr
+    --> Array.fromList [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
+
+    set (ix 9000 << L.bar) "Whatever" arr
+    --> arr
+
+-}
+ix : Int -> Optic pr ls a a x y -> Traversal (Array a) (Array a) x y
+ix =
+    Array.at
+
+
 {-| This accessor lets you access values inside the Ok variant of a Result.
+alias for [`Result.Accessors.onOk`](Result-Accessors#onOk)
 
     import Accessors exposing (..)
     import Lens as L
@@ -512,25 +583,26 @@ everyIdx =
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << ok << L.bar) maybeRecord
+    try (L.foo << ok_ << L.bar) maybeRecord
     --> Just 2
 
-    get (L.qux << ok << L.bar) maybeRecord
+    try (L.qux << ok_ << L.bar) maybeRecord
     --> Nothing
 
-    over (L.foo << ok << L.bar) ((+) 1) maybeRecord
+    map (L.foo << ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 3 }, qux = Err "Not an Int" }
 
-    over (L.qux << ok << L.bar) ((+) 1) maybeRecord
+    map (L.qux << ok_ << L.bar) ((+) 1) maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
 -}
-ok : Relation attribute built transformed -> Relation (Result x attribute) built (Maybe transformed)
-ok =
-    Result.onOk
+ok_ : Optic pr ls a b x y -> Prism pr (Result ignored a) (Result ignored b) x y
+ok_ =
+    Result.ok_
 
 
 {-| This accessor lets you access values inside the Err variant of a Result.
+alias for [`Result.Accessors.onErr`](Result-Accessors#onErr)
 
     import Accessors exposing (..)
     import Lens as L
@@ -540,25 +612,26 @@ ok =
                   , qux = Err "Not an Int"
                   }
 
-    get (L.foo << err) maybeRecord
+    try (L.foo << err_) maybeRecord
     --> Nothing
 
-    get (L.qux << err) maybeRecord
+    try (L.qux << err_) maybeRecord
     --> Just "Not an Int"
 
-    over (L.foo << err) String.toUpper maybeRecord
+    map (L.foo << err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "Not an Int" }
 
-    over (L.qux << err) String.toUpper maybeRecord
+    map (L.qux << err_) String.toUpper maybeRecord
     --> { foo = Ok { bar = 2 }, qux = Err "NOT AN INT" }
 
 -}
-err : Relation attribute built transformed -> Relation (Result attribute x) built (Maybe transformed)
-err =
-    Result.onErr
+err_ : Optic pr ls a b x y -> Prism pr (Result a ignored) (Result b ignored) x y
+err_ =
+    Result.err_
 
 
 {-| values: This accessor lets you traverse a Dict including the index of each element
+alias for [`Dict.Accessors.each`](Dict-Accessors#each)
 
     import Accessors exposing (..)
     import Lens as L
@@ -571,25 +644,26 @@ err =
                          ] |> Dict.fromList
                  }
 
-    get (L.foo << values) dictRecord
-    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList
+    all (L.foo << values) dictRecord
+    --> [{bar = 2}, {bar = 3}, {bar = 4}]
 
-    over (L.foo << values << L.bar) ((*) 10) dictRecord
+    map (L.foo << values << L.bar) ((*) 10) dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 30}), ("c", {bar = 40})] |> Dict.fromList}
 
-    get (L.foo << values << L.bar) dictRecord
-    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+    all (L.foo << values << L.bar) dictRecord
+    --> [2, 3, 4]
 
-    over (L.foo << values << L.bar) ((+) 1) dictRecord
+    map (L.foo << values << L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-values : Relation attribute reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+values : Optic pr ls a b x y -> Traversal (Dict key a) (Dict key b) x y
 values =
     Dict.each
 
 
 {-| keyed: This accessor lets you traverse a Dict including the index of each element
+alias for [`Dict.Accessors.each_`](Dict-Accessors#each_)
 
     import Accessors exposing (..)
     import Lens as L
@@ -602,33 +676,34 @@ values =
                          ] |> Dict.fromList
                  }
 
-    multiplyIfA : (String, { bar : Int }) -> (String, { bar : Int })
+    multiplyIfA : (String, { bar : Int }) -> { bar : Int }
     multiplyIfA ( key, ({ bar } as rec) ) =
         if key == "a" then
-            ( key, { bar = bar * 10 } )
+            { bar = bar * 10 }
         else
-            (key, rec)
+            rec
 
 
-    get (L.foo << keyed) dictRecord
-    --> [("a", ("a", {bar = 2})), ("b", ("b", {bar = 3})), ("c", ("c", {bar = 4}))] |> Dict.fromList
+    all (L.foo << keyed) dictRecord
+    --> [("a", {bar = 2}), ("b", {bar = 3}), ("c", {bar = 4})]
 
-    over (L.foo << keyed) multiplyIfA dictRecord
+    map (L.foo << keyed) multiplyIfA dictRecord
     --> {foo = [("a", {bar = 20}), ("b", {bar = 3}), ("c", {bar = 4})] |> Dict.fromList}
 
-    get (L.foo << keyed << snd << L.bar) dictRecord
-    --> [("a", 2), ("b", 3), ("c", 4)] |> Dict.fromList
+    all (L.foo << keyed << ixd L.bar) dictRecord
+    --> [2, 3, 4]
 
-    over (L.foo << keyed << snd << L.bar) ((+) 1) dictRecord
+    map (L.foo << keyed << ixd L.bar) ((+) 1) dictRecord
     --> {foo = [("a", {bar = 3}), ("b", {bar = 4}), ("c", {bar = 5})] |> Dict.fromList}
 
 -}
-keyed : Relation ( comparable, attribute ) reachable built -> Relation (Dict comparable attribute) reachable (Dict comparable built)
+keyed : Optic pr ls ( a, b ) c x y -> Traversal (Dict a b) (Dict a c) x y
 keyed =
     Dict.each_
 
 
 {-| key: NON-structure preserving accessor over Dict's
+alias for [`Dict.Accessors.at`](Dict-Accessors#at)
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -645,22 +720,23 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (key "baz") dict
     --> Nothing
 
-    get (key "foo" << try << L.bar) dict
+    try (key "foo" << just_ << L.bar) dict
     --> Just 2
 
     set (key "foo") Nothing dict
     --> Dict.remove "foo" dict
 
-    set (key "baz" << try << L.bar) 3 dict
+    set (key "baz" << just_ << L.bar) 3 dict
     --> dict
 
 -}
-key : String -> Relation (Maybe attribute) reachable wrap -> Relation (Dict String attribute) reachable wrap
+key : String -> Optic pr ls (Maybe a) (Maybe a) x y -> Lens ls (Dict String a) (Dict String a) x y
 key =
-    key_ identity
+    Dict.at
 
 
 {-| key: NON-structure preserving accessor over Dict's
+alias for [`Dict.Accessors.id`](Dict-Accessors#id)
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -677,22 +753,23 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (keyI 0) dict
     --> Nothing
 
-    get (keyI 1 << try << L.bar) dict
+    try (keyI 1 << just_ << L.bar) dict
     --> Just 2
 
     set (keyI 1) Nothing dict
     --> Dict.remove 1 dict
 
-    set (keyI 0 << try << L.bar) 3 dict
+    set (keyI 0 << just_ << L.bar) 3 dict
     --> dict
 
 -}
-keyI : Int -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Int attribute) reachable wrap
+keyI : Int -> Optic pr ls (Maybe a) (Maybe a) x y -> Lens ls (Dict Int a) (Dict Int a) x y
 keyI =
     Dict.id
 
 
 {-| `key_`: NON-structure preserving accessor over Dict's
+alias for [`Dict.Accessors.at_`](Dict-Accessors#at_)
 
 In terms of accessors, think of Dicts as records where each field is a Maybe.
 
@@ -703,7 +780,7 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     dict : Dict Char {bar : Int}
     dict = Dict.fromList [('C', {bar = 2})]
 
-    keyC : Char -> Relation (Maybe attribute) reachable wrap -> Relation (Dict Char attribute) reachable wrap
+    keyC : Char -> Optic pr ls (Maybe {bar : Int}) (Maybe {bar : Int}) x y -> Lens ls (Dict Char {bar : Int}) (Dict Char {bar : Int}) x y
     keyC =
         key_ String.fromChar
 
@@ -713,54 +790,23 @@ In terms of accessors, think of Dicts as records where each field is a Maybe.
     get (keyC 'Z') dict
     --> Nothing
 
-    get (keyC 'C' << try << L.bar) dict
+    try (keyC 'C' << just_ << L.bar) dict
     --> Just 2
 
     set (keyC 'C') Nothing dict
     --> Dict.remove 'C' dict
 
-    set (keyC 'Z' << try << L.bar) 3 dict
+    set (keyC 'Z' << just_ << L.bar) 3 dict
     --> dict
 
 -}
-key_ : (comparable -> String) -> comparable -> Relation (Maybe attribute) reachable wrap -> Relation (Dict comparable attribute) reachable wrap
+key_ : (comparable -> String) -> comparable -> Optic pr ls (Maybe a) (Maybe a) x y -> Lens ls (Dict comparable a) (Dict comparable a) x y
 key_ =
     Dict.at_
 
 
-{-| This accessor combinator lets you access Array indices.
-
-In terms of accessors, think of Dicts as records where each field is a Maybe.
-
-    import Array exposing (Array)
-    import Accessors exposing (..)
-    import Lens as L
-
-    arr : Array { bar : String }
-    arr = Array.fromList [{ bar = "Stuff" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    get (ix 1) arr
-    --> Just { bar = "Things" }
-
-    get (ix 9000) arr
-    --> Nothing
-
-    get (ix 0 << L.bar) arr
-    --> Just "Stuff"
-
-    set (ix 0 << L.bar) "Whatever" arr
-    --> Array.fromList [{ bar = "Whatever" }, { bar =  "Things" }, { bar = "Woot" }]
-
-    set (ix 9000 << L.bar) "Whatever" arr
-    --> arr
-
--}
-ix : Int -> Relation v reachable wrap -> Relation (Array v) reachable (Maybe wrap)
-ix =
-    Array.at
-
-
 {-| Lens over the first component of a Tuple
+alias for [`Tuple.Accessors.fst`](Tuple-Accessors#fst)
 
     import Accessors exposing (..)
 
@@ -773,16 +819,16 @@ ix =
     set fst "It's over" charging
     --> ("It's over", 1)
 
-    over fst (\s -> String.toUpper s ++ "!!!") charging
+    map fst (\s -> String.toUpper s ++ "!!!") charging
     --> ("IT'S OVER!!!", 1)
 
 -}
-fst : Relation sub reachable wrap -> Relation ( sub, x ) reachable wrap
+fst : Optic pr ls a b x y -> Lens ls ( a, two ) ( b, two ) x y
 fst =
     Tuple.fst
 
 
-{-|
+{-| alias for [`Tuple.Accessors.snd`](Tuple-Accessors#snd)
 
     import Accessors exposing (..)
 
@@ -797,38 +843,11 @@ fst =
 
     meh
         |> set snd 1125
-        |> over fst (\s -> String.toUpper s ++ "!!!")
-        |> over snd ((*) 8)
+        |> map fst (\s -> String.toUpper s ++ "!!!")
+        |> map snd ((*) 8)
     --> ("IT'S OVER!!!", 9000)
 
 -}
-snd : Relation sub reachable wrap -> Relation ( x, sub ) reachable wrap
+snd : Optic pr ls a b x y -> Lens ls ( one, a ) ( one, b ) x y
 snd =
     Tuple.snd
-
-
-{-| Used with a Prism, think of `!!` boolean coercion in Javascript except type safe.
-
-    Just 1234
-        |> is try
-    --> True
-
-    Nothing
-        |> is try
-    --> False
-
-    ["Stuff", "things"]
-        |> is (at 2)
-    --> False
-
-    ["Stuff", "things"]
-        |> is (at 0)
-    --> True
-
--}
-is :
-    (Relation attribute built attribute -> Relation structure reachable (Maybe transformed))
-    -> structure
-    -> Bool
-is =
-    Base.is

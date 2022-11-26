@@ -1,4 +1,14 @@
 {
   "root": "../src",
-  "tests": ["Accessors", "SelectList.Accessors"]
+  "tests": [
+    "Accessors",
+    "Array.Accessors",
+    "Dict.Accessors",
+    "List.Accessors",
+    "SelectList.Accessors",
+    "Maybe.Accessors",
+    "Result.Accessors",
+    "SelectList.Accessors",
+    "Tuple.Accessors"
+  ]
 }
