@@ -20,12 +20,16 @@
   },
   "watch": {
     "test": {
-      "patterns": [ "src", "tests" ],
+      "patterns": [
+        "src",
+        "tests"
+      ],
       "extensions": "elm",
       "ignore": "tests/VerifyExamples"
     }
   },
   "devDependencies": {
+    "elm": "^0.19.1-5",
     "elm-review": "^2.7.6",
     "elm-test": "^0.19.1-revision10",
     "elm-verify-examples": "^5.2.0",
